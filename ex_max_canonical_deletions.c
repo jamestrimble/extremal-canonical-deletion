@@ -28,7 +28,6 @@ static statsblk stats;
 static long long nauty_calls = 0;
 
 int global_n;
-int global_edge_count;
 int global_res = 0;
 int global_mod = 0;
 
@@ -397,7 +396,6 @@ int main(int argc, char *argv[])
     }
 
     global_n = n;
-    global_edge_count = edge_count;
 
     int m = SETWORDSNEEDED(n);
     if (m != 1) {

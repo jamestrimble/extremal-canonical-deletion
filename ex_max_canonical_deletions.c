@@ -60,6 +60,14 @@ void delete_neighbourhood(int v, graph *g)
 //    return invar;
 //}
 
+void make_canonical(graph *g, int n, graph *canon_g)
+{
+    int lab[MAXN],ptn[MAXN],orbits[MAXN];
+    EMPTYGRAPH(canon_g,1,MAXN);
+    densenauty(g,lab,ptn,orbits,&options,&stats,1,n,canon_g);
+    nauty_calls++;
+}
+
 bool deletion_is_better(int v, graph *g, int n)
 {
     graph g0[MAXN], g1[MAXN];
@@ -88,11 +96,8 @@ bool deletion_is_better(int v, graph *g, int n)
 //    if (invar0 > invar1)
 //        return false;
 
-    int lab[MAXN],ptn[MAXN],orbits[MAXN];
     graph g1_canon[MAXN];
-    EMPTYGRAPH(g1_canon,1,MAXN);
-    densenauty(g1,lab,ptn,orbits,&options,&stats,1,n-1,g1_canon);
-    nauty_calls++;
+    make_canonical(g1, n-1, g1_canon);
 
     return compare_graphs(hash_graph(g0, n-1),
                 hash_graph(g1_canon, n-1),
@@ -230,11 +235,8 @@ void output_graph2(graph *g, int n, setword neighbours, struct GraphPlusList *li
     int max_deg = get_max_deg(g, n, degs);
     if (graph_last_vtx_has_min_deg(g, n, degs) &&
             deletion_is_canonical(g, n, degs[n-1], degs)) {
-        graph new_g[MAXN];   // make a copy, since gp_list_add may relabel the graph
-        EMPTYGRAPH(new_g,1,MAXN);
-        int lab[MAXN],ptn[MAXN],orbits[MAXN];
-        nauty_calls++;
-        densenauty(g,lab,ptn,orbits,&options,&stats,1,n,new_g);
+        graph new_g[MAXN];
+        make_canonical(g, n, new_g);
         struct GraphPlus *gp = gp_list_add(list, new_g, n);
         if (gp) {
             if (n==global_n) {

@@ -63,8 +63,6 @@ static unsigned long long calc_invariant(graph *g, int n)
 
 bool deletion_is_better(int v, graph *g, int n)
 {
-    // TODO: lazily generate g0_canon, at most once per parent graph
-    // TODO: do we always need to use Nauty, rather than just a cheap invariant?
     graph g0[MAXN], g1[MAXN];
     for (int i=0; i<n; i++) {
         g0[i] = g[i];
@@ -235,8 +233,6 @@ void output_graph2(graph *g, int n, setword neighbours, struct GraphPlusList *li
     if (graph_last_vtx_has_min_deg(g, n, degs) &&
             deletion_is_canonical(g, n, degs[n-1], degs)) {
         graph new_g[MAXN];   // make a copy, since gp_list_add may relabel the graph
-//        for (int j=0; j<MAXN; j++)  // FIXME: why does just up to n not work???
-//            new_g[j] = g[j];
         EMPTYGRAPH(new_g,1,MAXN);
         int lab[MAXN],ptn[MAXN],orbits[MAXN];
         nauty_calls++;

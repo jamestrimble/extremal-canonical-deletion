@@ -12,6 +12,7 @@
 #include "util.h"
 #include "graph_util.h"
 #include "graph_plus.h"
+#include "possible_augmentations.h"
 
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
 
@@ -274,10 +275,9 @@ void output_graph2(graph *g, int n, setword neighbours, struct GraphPlusList *li
 // neighbours:               neighbours already chosen for the new vertex
 // candidate_neighbours:     other neighbours that might be chosen for the new vertex
 // list:                     a pointer to list of new graphs that is being built
-void search2(graph *g, int g_min_deg, int g_max_deg, int n, setword *have_short_path,
+void search2(graph *g, int g_edge_count, int g_min_deg, int g_max_deg, int n,
+        setword *have_short_path,
         setword neighbours, setword candidate_neighbours, bool max_deg_incremented,
-        setword possible_augmentations_max_deg_same,
-        setword possible_augmentations_max_deg_incremented,
         struct GraphPlusList *list) 
 {
     int neighbours_count = POPCOUNT(neighbours);
@@ -285,13 +285,16 @@ void search2(graph *g, int g_min_deg, int g_max_deg, int n, setword *have_short_
     if (neighbours_count > g_min_deg + 1)
         return;
 
-    if (max_deg_incremented) {
-        if (ISELEMENT(&possible_augmentations_max_deg_incremented, neighbours_count))
-            output_graph2(g, n, neighbours, list);
-    } else {
-        if (ISELEMENT(&possible_augmentations_max_deg_same, neighbours_count))
-            output_graph2(g, n, neighbours, list);
-    }
+    struct Augmentation aug = {
+                .num_vertices=n-1,
+                .num_edges=g_edge_count,
+                .min_deg=g_min_deg,
+                .max_deg=g_max_deg,
+                .new_vertex_deg=neighbours_count,
+                .max_deg_incremented=max_deg_incremented
+            };
+    if (augmentation_is_in_set(aug))
+        output_graph2(g, n, neighbours, list);
 
     while (candidate_neighbours) {
         int cand;
@@ -300,8 +303,7 @@ void search2(graph *g, int g_min_deg, int g_max_deg, int n, setword *have_short_
         if (!max_deg_incremented && POPCOUNT(g[cand]) == g_max_deg)
             max_deg_incremented = true;
         setword new_candidates = candidate_neighbours & ~have_short_path[cand];
-        search2(g, g_min_deg, g_max_deg, n, have_short_path, neighbours, new_candidates, max_deg_incremented,
-                possible_augmentations_max_deg_same, possible_augmentations_max_deg_incremented, list);
+        search2(g, g_edge_count, g_min_deg, g_max_deg, n, have_short_path, neighbours, new_candidates, max_deg_incremented, list);
         DELELEMENT(&neighbours, cand);
     }
 }
@@ -311,25 +313,17 @@ void add_vertex(graph *g, int g_n, int g_edge_count, int g_min_deg, int g_max_de
     if (g_n == SPLITTING_ORDER && global_mod!=0 && hash_graph(g, g_n)%global_mod != global_res)
         return;
 
-    //printf("add_vertex\n");
-    struct GraphPlusList *augmentations_list = get_gp_list(g_n, g_edge_count, g_min_deg, g_max_deg);
-    if (augmentations_list) {
-        setword have_short_path[MAXN];
-        all_pairs_check_for_short_path(g, g_n, MIN_GIRTH-3, have_short_path);
+    setword have_short_path[MAXN];
+    all_pairs_check_for_short_path(g, g_n, MIN_GIRTH-3, have_short_path);
 
-        setword candidate_neighbours = 0;
-        for (int l=0; l<g_n; l++)
-            ADDELEMENT(&candidate_neighbours, l);
+    setword candidate_neighbours = 0;
+    for (int l=0; l<g_n; l++)
+        ADDELEMENT(&candidate_neighbours, l);
 
-        struct GraphPlusList *list = make_gp_list(1, 0, 0, 0);
-//        printf("%d %d %d %d\n", g_n, g_edge_count, g_min_deg, g_max_deg);
-        search2(g, g_min_deg, g_max_deg, g_n+1, have_short_path, 0, candidate_neighbours, false,
-                augmentations_list->possible_augmentations_max_deg_same,
-                augmentations_list->possible_augmentations_max_deg_incremented,
-                list);
-        free_tree(&list->tree_head);
-        free(list);
-    }
+    struct GraphPlusList *list = make_gp_list(1, 0, 0, 0);
+    search2(g, g_edge_count, g_min_deg, g_max_deg, g_n+1, have_short_path, 0, candidate_neighbours, false, list);
+    free_tree(&list->tree_head);
+    free(list);
 }
 
 void make_possible_augmentations_recurse(int n, int edge_count, int min_deg, int max_deg)
@@ -351,16 +345,16 @@ void make_possible_augmentations_recurse(int n, int edge_count, int min_deg, int
             for (int j=start_j; j<=max_deg; j++) {
                 if (min_and_max_deg_are_feasible(n-1, i, j, small_g_ec)) {
 //                    printf("%d %d %d %d:-)\n", n-1, small_g_ec, i, j);
-                    if (j == max_deg-1) {
-                        if (!ISELEMENT(&get_or_make_gp_list(n-1, small_g_ec, i, j)->possible_augmentations_max_deg_incremented, min_deg)) {
-                            ADDELEMENT(&get_or_make_gp_list(n-1, small_g_ec, i, j)->possible_augmentations_max_deg_incremented, min_deg);
-                            make_possible_augmentations_recurse(n-1, small_g_ec, i, j);
-                        }
-                    } else {
-                        if (!ISELEMENT(&get_or_make_gp_list(n-1, small_g_ec, i, j)->possible_augmentations_max_deg_same, min_deg)) {
-                            ADDELEMENT(&get_or_make_gp_list(n-1, small_g_ec, i, j)->possible_augmentations_max_deg_same, min_deg);
-                            make_possible_augmentations_recurse(n-1, small_g_ec, i, j);
-                        }
+                    struct Augmentation aug = {
+                                .num_vertices=n-1,
+                                .num_edges=small_g_ec,
+                                .min_deg=i,
+                                .max_deg=j,
+                                .new_vertex_deg=min_deg,
+                                .max_deg_incremented=(j==max_deg-1)
+                            };
+                    if (add_augmentation_to_set(aug)) {
+                        make_possible_augmentations_recurse(n-1, small_g_ec, i, j);
                     }
                 }
             }
@@ -442,4 +436,5 @@ int main(int argc, char *argv[])
     printf("Total graph count: %llu\n", global_graph_count);
 
     clean_up_gp_lists();
+    clean_up_augmentation_lists();
 }

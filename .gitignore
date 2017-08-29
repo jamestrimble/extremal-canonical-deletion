@@ -6,3 +6,5 @@ prof_output
 *.gcda
 *.gcno
 ex_max_canonical_deletions
+program-output/
+output-summary/

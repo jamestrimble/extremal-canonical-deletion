@@ -316,8 +316,6 @@ void make_possible_augmentations_recurse(int n, int edge_count, int min_deg, int
     if (n == 1)
         return;
     
-//    printf("--- %d\n", n);
-
     int small_g_ec = edge_count - min_deg;
     if (small_g_ec >= 0) {
         // i is min deg in the graph with one vertex fewer
@@ -329,7 +327,6 @@ void make_possible_augmentations_recurse(int n, int edge_count, int min_deg, int
             int start_j = MAX(i, max_deg-1);
             for (int j=start_j; j<=max_deg; j++) {
                 if (min_and_max_deg_are_feasible(n-1, i, j, small_g_ec)) {
-//                    printf("%d %d %d %d:-)\n", n-1, small_g_ec, i, j);
                     struct Augmentation aug = {
                                 .num_vertices=n-1,
                                 .num_edges=small_g_ec,
@@ -413,7 +410,6 @@ int main(int argc, char *argv[])
     find_extremal_graphs(n, edge_count, start_time);
 
     printf("Nauty calls: %lld\n", nauty_calls);
-
     printf("Total graph count: %llu\n", global_graph_count);
 
     clean_up_augmentation_lists();

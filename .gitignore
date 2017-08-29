@@ -1,0 +1,8 @@
+ex_plus
+*.swp
+*.out
+prof_output
+*.c.gcov
+*.gcda
+*.gcno
+ex_max_canonical_deletions

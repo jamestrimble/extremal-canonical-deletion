@@ -274,15 +274,14 @@ void search2(graph *g, int g_edge_count, int g_min_deg, int g_max_deg, int n,
     if (neighbours_count > g_min_deg + 1)
         return;
 
-    struct Augmentation aug = {
+    if (augmentation_is_in_set((struct Augmentation) {
                 .num_vertices=n-1,
                 .num_edges=g_edge_count,
                 .min_deg=g_min_deg,
                 .max_deg=g_max_deg,
                 .new_vertex_deg=neighbours_count,
                 .max_deg_incremented=max_deg_incremented
-            };
-    if (augmentation_is_in_set(aug))
+            }))
         output_graph2(g, n, neighbours, list);
 
     while (candidate_neighbours) {

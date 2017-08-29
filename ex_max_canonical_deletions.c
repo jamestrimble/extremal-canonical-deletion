@@ -42,23 +42,23 @@ void delete_neighbourhood(int v, graph *g)
     }
 }
 
-static unsigned long long calc_invariant(graph *g, int n)
-{
-    unsigned long long invar = 0ull;
-    int degs[MAXN];
-    for (int i=0; i<n; i++)
-        degs[i] = POPCOUNT(g[i]);
-
-    for (int i=0; i<n; i++) {
-        setword neighbourhood = g[i];
-        int w;
-        while (neighbourhood) {
-            TAKEBIT(w, neighbourhood);
-            invar += degs[i] * degs[w] * degs[w];
-        }
-    }
-    return invar;
-}
+//static unsigned long long calc_invariant(graph *g, int n)
+//{
+//    unsigned long long invar = 0ull;
+//    int degs[MAXN];
+//    for (int i=0; i<n; i++)
+//        degs[i] = POPCOUNT(g[i]);
+//
+//    for (int i=0; i<n; i++) {
+//        setword neighbourhood = g[i];
+//        int w;
+//        while (neighbourhood) {
+//            TAKEBIT(w, neighbourhood);
+//            invar += degs[i] * degs[w] * degs[w];
+//        }
+//    }
+//    return invar;
+//}
 
 bool deletion_is_better(int v, graph *g, int n)
 {
@@ -81,12 +81,12 @@ bool deletion_is_better(int v, graph *g, int n)
         }
     }
 
-    unsigned long long invar0 = calc_invariant(g0, n-1);
-    unsigned long long invar1 = calc_invariant(g1, n-1);
-    if (invar0 < invar1)
-        return true;
-    if (invar0 > invar1)
-        return false;
+//    unsigned long long invar0 = calc_invariant(g0, n-1);
+//    unsigned long long invar1 = calc_invariant(g1, n-1);
+//    if (invar0 < invar1)
+//        return true;
+//    if (invar0 > invar1)
+//        return false;
 
     int lab[MAXN],ptn[MAXN],orbits[MAXN];
     graph g1_canon[MAXN];

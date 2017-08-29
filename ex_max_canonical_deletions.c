@@ -357,6 +357,9 @@ void make_possible_augmentations(int n, int edge_count)
 
 void find_extremal_graphs(int n, int edge_count, clock_t start_time)
 {
+    if (global_mod > 0 && global_res > 0 && n <= SPLITTING_ORDER)
+        return;
+
     make_possible_augmentations(n, edge_count);
 
     graph g[MAXN];

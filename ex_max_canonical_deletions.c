@@ -34,13 +34,6 @@ int global_mod = 0;
 
 unsigned long long global_graph_count = 0;
 
-void make_order_1_graph() {
-    graph g[MAXN];
-    EMPTYGRAPH(g,1,MAXN);
-    struct GraphPlusList *list = make_gp_list(1, 0, 0, 0);
-    gp_list_add(list, g, 1);
-}
-
 void delete_neighbourhood(int v, graph *g)
 {
     while (g[v]) {
@@ -426,11 +419,8 @@ int main(int argc, char *argv[])
 
     clock_t start_time = clock();
 
-    //make_order_1_graph();
-
     find_extremal_graphs(n, edge_count, start_time);
 
-//    show_gp_list_sizes();
     printf("Nauty calls: %lld\n", nauty_calls);
 
     printf("Total graph count: %llu\n", global_graph_count);

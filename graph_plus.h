@@ -28,27 +28,15 @@ struct GraphPlusList {
     int min_deg;
     int max_deg;
     unsigned long long sz;
-    setword possible_augmentations_max_deg_same;
-    setword possible_augmentations_max_deg_incremented;
     struct GraphPlus *tree_head;   // head of binary search tree
     struct GraphPlusList *next;
 };
 
 struct GraphPlusList *make_gp_list(int num_vertices, int num_edges, int min_deg, int max_deg);
 
-struct GraphPlusList *get_or_make_gp_list(int num_vertices, int num_edges, int min_deg, int max_deg);
-
-struct GraphPlusList *get_gp_list(int num_vertices, int num_edges, int min_deg, int max_deg);
-
-int get_gp_list_sz(int num_vertices, int num_edges, int min_deg, int max_deg);
-
 void clean_up_gp_lists();
 
 void free_tree(struct GraphPlus **node_ptr);
-
-void show_gp_list_sizes();
-
-struct GraphPlus *alloc_graph_plus(int n);
 
 setword hash_graph(graph *g, int n);
 

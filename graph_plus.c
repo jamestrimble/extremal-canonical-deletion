@@ -15,13 +15,6 @@ static unsigned int hash(int num_vertices, int num_edges, int min_deg, int max_d
     return result % HASH_TABLE_SIZE;
 }
 
-static void add_gp_list_to_collection(struct GraphPlusList *list)
-{
-    unsigned int hash_val = hash(list->num_vertices, list->num_edges, list->min_deg, list->max_deg);
-    list->next = list_heads[hash_val];
-    list_heads[hash_val] = list;
-}
-
 struct GraphPlusList *make_gp_list(int num_vertices, int num_edges, int min_deg, int max_deg)
 {
     struct GraphPlusList *list = emalloc(sizeof(*list));
@@ -31,26 +24,6 @@ struct GraphPlusList *make_gp_list(int num_vertices, int num_edges, int min_deg,
     list->max_deg = max_deg;
     list->sz = 0;
     list->tree_head = NULL;
-    list->possible_augmentations_max_deg_same = 0ull;
-    list->possible_augmentations_max_deg_incremented = 0ull;
-    return list;
-}
-
-struct GraphPlusList *get_or_make_gp_list(int num_vertices, int num_edges, int min_deg, int max_deg)
-{
-    struct GraphPlusList *list = list_heads[hash(num_vertices, num_edges, min_deg, max_deg)];
-    while (list) {
-        if (list->num_vertices==num_vertices &&
-                list->num_edges==num_edges &&
-                list->max_deg==max_deg &&
-                list->min_deg==min_deg) {
-            return list;
-        }
-        list = list->next;
-    }
-    // The list doesn't exist yet...
-    list = make_gp_list(num_vertices, num_edges, min_deg, max_deg);
-    add_gp_list_to_collection(list);
     return list;
 }
 
@@ -67,12 +40,6 @@ struct GraphPlusList *get_gp_list(int num_vertices, int num_edges, int min_deg, 
         list = list->next;
     }
     return NULL;
-}
-
-int get_gp_list_sz(int num_vertices, int num_edges, int min_deg, int max_deg)
-{
-    struct GraphPlusList *list = get_gp_list(num_vertices, num_edges, min_deg, max_deg);
-    return list ? list->sz : 0;
 }
 
 void clean_up_gp_lists()
@@ -99,25 +66,7 @@ void free_tree(struct GraphPlus **node_ptr)
     *node_ptr = NULL;
 }
 
-void show_gp_list_sizes()
-{
-    for (int i=0; i<HASH_TABLE_SIZE; i++) {
-        struct GraphPlusList *list = list_heads[i];
-        while (list) {
-            if (true || list->sz)
-                printf("%d %d %d %d: %llu%s\n",
-                        list->num_vertices,
-                        list->num_edges,
-                        list->min_deg,
-                        list->max_deg,
-                        list->sz,
-                        list->sz==MAX_SET_SIZE ? "+" : "");
-            list = list->next;
-        }
-    }
-}
-
-struct GraphPlus *alloc_graph_plus(int n) {
+static struct GraphPlus *alloc_graph_plus(int n) {
     return emalloc(sizeof(struct GraphPlus) + n * sizeof(setword));
 }
 

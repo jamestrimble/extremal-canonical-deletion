@@ -187,15 +187,14 @@ void add_vertex(graph *g, int g_n, int g_edge_count, int g_min_deg, int g_max_de
 void show_graph2(struct GraphPlus *gp)
 {
     global_graph_count++;
-//    printf("GRAPH\n");
-//    printf("Graph with %d vertices\n", gp->n);
-//    for (int i=0; i<gp->n; i++) {
-//        for (int j=0; j<gp->n; j++) {
-//            printf("%s ", ISELEMENT(&gp->graph[i], j) ? "X" : ".");
-//        }
-//        printf("\n");
-//    }
-//    printf("\n");
+    printf("Graph with %d vertices\n", gp->n);
+    for (int i=0; i<gp->n; i++) {
+        for (int j=0; j<gp->n; j++) {
+            printf("%s ", ISELEMENT(&gp->graph[i], j) ? "X" : ".");
+        }
+        printf("\n");
+    }
+    printf("\n");
 }
 
 int get_max_deg(graph *g, int n, int *degs)

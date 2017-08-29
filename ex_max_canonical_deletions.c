@@ -16,7 +16,7 @@
 
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
 
-#define SPLITTING_ORDER 20 
+#define SPLITTING_ORDER 21
 
 // TODO: re-name lists to sets, where appropriate
 

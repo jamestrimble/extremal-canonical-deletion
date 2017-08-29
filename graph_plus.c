@@ -1,20 +1,6 @@
 #include "graph_plus.h"
 #include "util.h"
 
-#define HASH_TABLE_SIZE (1 << 18)
-
-struct GraphPlusList *list_heads[HASH_TABLE_SIZE] = {};
-
-static unsigned int hash(int num_vertices, int num_edges, int min_deg, int max_deg)
-{
-    unsigned int result = 17u;
-    result = 31u*result + num_vertices;
-    result = 31u*result + num_edges;
-    result = 31u*result + min_deg;
-    result = 31u*result + max_deg;
-    return result % HASH_TABLE_SIZE;
-}
-
 struct GraphPlusList *make_gp_list(int num_vertices, int num_edges, int min_deg, int max_deg)
 {
     struct GraphPlusList *list = emalloc(sizeof(*list));
@@ -25,34 +11,6 @@ struct GraphPlusList *make_gp_list(int num_vertices, int num_edges, int min_deg,
     list->sz = 0;
     list->tree_head = NULL;
     return list;
-}
-
-struct GraphPlusList *get_gp_list(int num_vertices, int num_edges, int min_deg, int max_deg)
-{
-    struct GraphPlusList *list = list_heads[hash(num_vertices, num_edges, min_deg, max_deg)];
-    while (list) {
-        if (list->num_vertices==num_vertices &&
-                list->num_edges==num_edges &&
-                list->max_deg==max_deg &&
-                list->min_deg==min_deg) {
-            return list;
-        }
-        list = list->next;
-    }
-    return NULL;
-}
-
-void clean_up_gp_lists()
-{
-    for (int i=0; i<HASH_TABLE_SIZE; i++) {
-        struct GraphPlusList *list = list_heads[i];
-        while (list) {
-            free_tree(&list->tree_head);
-            struct GraphPlusList *next = list->next;
-            free(list);
-            list = next;
-        }
-    }
 }
 
 void free_tree(struct GraphPlus **node_ptr)
@@ -138,16 +96,6 @@ static struct GraphPlus * make_graph_plus(graph *g, int n, struct GraphPlus *gp)
     compress_graph(g, n, gp->graph);
     return gp;
 }
-
-//static void make_canonical(graph *g, int n, optionblk *options)
-//{
-//    graph g_canon[MAXN];
-//    EMPTYGRAPH(g_canon,1,MAXN);
-//    int lab[MAXN],ptn[MAXN],orbits[MAXN];
-//    densenauty(g,lab,ptn,orbits,options,&stats,1,n,g_canon);
-//    for (int i=0; i<n; i++)
-//        g[i] = g_canon[i];
-//}
 
 // Returns pointer to new graph if it was added, or NULL if graph was in set already
 struct GraphPlus * gp_list_add(struct GraphPlusList *list, graph *g, int n)

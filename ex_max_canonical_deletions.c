@@ -425,6 +425,5 @@ int main(int argc, char *argv[])
 
     printf("Total graph count: %llu\n", global_graph_count);
 
-    clean_up_gp_lists();
     clean_up_augmentation_lists();
 }

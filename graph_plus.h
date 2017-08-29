@@ -34,8 +34,6 @@ struct GraphPlusList {
 
 struct GraphPlusList *make_gp_list(int num_vertices, int num_edges, int min_deg, int max_deg);
 
-void clean_up_gp_lists();
-
 void free_tree(struct GraphPlus **node_ptr);
 
 setword hash_graph(graph *g, int n);

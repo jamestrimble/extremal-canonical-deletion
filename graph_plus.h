@@ -4,6 +4,7 @@
 #define MAX_SET_SIZE (1 << 19)
 
 #include <stdbool.h>
+#include <stdio.h>
 
 #define MAXN 64   /* TODO: don't duplicate this */
 
@@ -14,25 +15,18 @@ enum comp {LESS_THAN, GREATER_THAN, EQUAL};
 struct GraphPlus {
     setword hash;
 //    unsigned long long invariant;
-//    bool made_canonical;
     struct GraphPlus *left;   // left child in binary search tree
     struct GraphPlus *right;   // right child in binary search tree
     int n;
     graph graph[];
 };
 
-// TODO: stop making this do double duty as a list and as a set of possible augmentations
 struct GraphPlusList {
-    int num_vertices;
-    int num_edges;
-    int min_deg;
-    int max_deg;
     unsigned long long sz;
     struct GraphPlus *tree_head;   // head of binary search tree
-    struct GraphPlusList *next;
 };
 
-struct GraphPlusList *make_gp_list(int num_vertices, int num_edges, int min_deg, int max_deg);
+struct GraphPlusList make_gp_list();
 
 void free_tree(struct GraphPlus **node_ptr);
 

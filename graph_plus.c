@@ -1,16 +1,9 @@
 #include "graph_plus.h"
 #include "util.h"
 
-struct GraphPlusList *make_gp_list(int num_vertices, int num_edges, int min_deg, int max_deg)
+struct GraphPlusList make_gp_list()
 {
-    struct GraphPlusList *list = emalloc(sizeof(*list));
-    list->num_vertices = num_vertices;
-    list->num_edges = num_edges;
-    list->min_deg = min_deg;
-    list->max_deg = max_deg;
-    list->sz = 0;
-    list->tree_head = NULL;
-    return list;
+    return (struct GraphPlusList) {.sz=0, .tree_head=0};
 }
 
 void free_tree(struct GraphPlus **node_ptr)

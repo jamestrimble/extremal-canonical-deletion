@@ -313,10 +313,9 @@ void add_vertex(graph *g, int g_n, int g_edge_count, int g_min_deg, int g_max_de
     for (int l=0; l<g_n; l++)
         ADDELEMENT(&candidate_neighbours, l);
 
-    struct GraphPlusList *list = make_gp_list(1, 0, 0, 0);
-    search2(g, g_edge_count, g_min_deg, g_max_deg, g_n+1, have_short_path, 0, candidate_neighbours, false, list);
-    free_tree(&list->tree_head);
-    free(list);
+    struct GraphPlusList list = make_gp_list();
+    search2(g, g_edge_count, g_min_deg, g_max_deg, g_n+1, have_short_path, 0, candidate_neighbours, false, &list);
+    free_tree(&list.tree_head);
 }
 
 void make_possible_augmentations_recurse(int n, int edge_count, int min_deg, int max_deg)

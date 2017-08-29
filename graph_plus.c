@@ -1,4 +1,4 @@
-#include "graph_plus2.h"
+#include "graph_plus.h"
 #include "util.h"
 
 #define HASH_TABLE_SIZE (1 << 18)

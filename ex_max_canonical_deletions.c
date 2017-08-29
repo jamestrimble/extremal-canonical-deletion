@@ -11,7 +11,7 @@
 
 #include "util.h"
 #include "graph_util.h"
-#include "graph_plus2.h"
+#include "graph_plus.h"
 
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
 

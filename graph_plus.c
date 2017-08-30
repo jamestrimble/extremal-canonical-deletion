@@ -18,7 +18,7 @@ void free_tree(struct GraphPlus **node_ptr)
 }
 
 static struct GraphPlus *alloc_graph_plus(int n) {
-    return emalloc(sizeof(struct GraphPlus) + n * sizeof(setword));
+    return emalloc(sizeof(struct GraphPlus));
 }
 
 setword hash_graph(graph *g, int n) {

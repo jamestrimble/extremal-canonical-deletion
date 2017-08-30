@@ -18,7 +18,7 @@ struct GraphPlus {
     struct GraphPlus *left;   // left child in binary search tree
     struct GraphPlus *right;   // right child in binary search tree
     int n;
-    graph graph[];
+    graph graph[MAXN];
 };
 
 struct GraphPlusList {

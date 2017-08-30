@@ -111,7 +111,7 @@ bool deletion_is_better(int v, graph *g, int n)
 bool deletion_is_canonical(graph *g, int n, int min_deg, int *degs) {
     int n0 = num_neighbours_of_deg_d(g, n-1, min_deg, degs);
     int nds0 = nb_deg_sum(g, n-1, degs);
-    int nnds0 = -1;  // Only calculate this if we need it
+    unsigned long long nnds0 = ULLONG_MAX;  // Only calculate this if we need it
     for (int i=0; i<n-1; i++) {
         if (degs[i]==min_deg) {
             int n1 = num_neighbours_of_deg_d(g, i, min_deg, degs);
@@ -122,9 +122,9 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int *degs) {
                 if (nds1 > nds0) {
                     return false;
                 } else if (nds1 == nds0) {
-                    if (nnds0 == -1)
-                        nnds0 = nb_nb_deg_sum(g, n-1, degs);
-                    int nnds1 = nb_nb_deg_sum(g, i, degs);
+                    if (nnds0 == ULLONG_MAX)
+                        nnds0 = weighted_nb_nb_deg_sum(g, n-1, degs);
+                    unsigned long long nnds1 = weighted_nb_nb_deg_sum(g, i, degs);
                     if (nnds1 > nnds0) {
                         return false;
                     } else if (nnds1 == nnds0 && deletion_is_better(i, g, n)) {

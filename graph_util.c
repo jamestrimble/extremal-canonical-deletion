@@ -1,6 +1,8 @@
 #define MAXN 64    /* Define this before including nauty.h */
 #include "nauty.h"   /* which includes <stdio.h> and other system files */
 
+#include "graph_util.h"
+
 #include <stdbool.h>
 
 int nb_deg_sum(graph *g, int v, int *degs) {
@@ -14,15 +16,15 @@ int nb_deg_sum(graph *g, int v, int *degs) {
     return deg_sum;
 }
 
-int nb_nb_deg_sum(graph *g, int v, int *degs) {
-    int deg_sum = 0;
+unsigned long long weighted_nb_nb_deg_sum(graph *g, int v, int *degs) {
+    unsigned long long retval = 0;
     setword nb = g[v];
     while (nb) {
         int w;
         TAKEBIT(w, nb);
-        deg_sum += nb_deg_sum(g, w, degs);
+        retval += (unsigned long long) degs[w] * nb_deg_sum(g, w, degs);
     }
-    return deg_sum;
+    return retval;
 }
 
 int num_neighbours_of_deg_d(graph *g, int v, int d, int *degs) {

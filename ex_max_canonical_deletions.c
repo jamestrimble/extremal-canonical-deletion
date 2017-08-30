@@ -255,9 +255,6 @@ void search(struct GraphPlus *gp, setword *have_short_path,
 {
     int neighbours_count = POPCOUNT(neighbours);
 
-    if (neighbours_count > gp->min_deg + 1)
-        return;
-
     if (augmentation_is_in_set((struct Augmentation) {
                 .num_vertices=gp->n,
                 .num_edges=gp->edge_count,
@@ -267,6 +264,9 @@ void search(struct GraphPlus *gp, setword *have_short_path,
                 .max_deg_incremented=max_deg_incremented
             }))
         output_graph(gp, neighbours, max_deg_incremented, list);
+
+    if (neighbours_count == gp->min_deg + 1)
+        return;
 
     while (candidate_neighbours) {
         int cand;

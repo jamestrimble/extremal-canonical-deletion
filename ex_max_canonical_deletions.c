@@ -202,13 +202,6 @@ void show_graph(struct GraphPlus *gp)
     printf("\n");
 }
 
-bool graph_last_vtx_has_min_deg(graph *g, int n, int *degs) {
-    for (int i=0; i<n-1; i++)
-        if (degs[i] < degs[n-1])
-            return false;
-    return true;
-}
-
 // gp is the graph that we're augmenting
 void output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_incremented,
         struct GraphPlusList *list)
@@ -220,20 +213,21 @@ void output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_increme
         ADDONEEDGE(gp->graph, n-1, nb, 1);
     }
     int degs[MAXN];
-    unsigned edge_endpoint_count = 0;
-    for (int i=0; i<n; i++) {
+    degs[n-1] = POPCOUNT(gp->graph[n-1]);
+    for (int i=0; i<n-1; i++) {
         degs[i] = POPCOUNT(gp->graph[i]);
-        edge_endpoint_count += degs[i];
+        if (degs[i] < degs[n-1])   // The last vertex must have minimum degree
+            goto clean_up_output_graph;
     }
-    int edge_count = gp->edge_count + degs[n-1];
-    int max_deg = gp->max_deg + max_deg_incremented;
-    if (graph_last_vtx_has_min_deg(gp->graph, n, degs) &&
-            deletion_is_canonical(gp->graph, n, degs[n-1], degs)) {
+    if (deletion_is_canonical(gp->graph, n, degs[n-1], degs)) {
         graph new_g[MAXN];
         make_canonical(gp->graph, n, new_g);
+        int edge_count = gp->edge_count + degs[n-1];
+        int max_deg = gp->max_deg + max_deg_incremented;
         gp_list_add(list, new_g, n, edge_count, degs[n-1], max_deg);
     }
 
+clean_up_output_graph:
     // Delete the edges that were added
     while (gp->graph[n-1]) {
         int nb;

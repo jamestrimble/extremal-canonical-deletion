@@ -17,10 +17,6 @@ void free_tree(struct GraphPlus **node_ptr)
     *node_ptr = NULL;
 }
 
-static struct GraphPlus *alloc_graph_plus(int n) {
-    return emalloc(sizeof(struct GraphPlus));
-}
-
 setword hash_graph(graph *g, int n) {
     setword hash = 0ull;
     for (int i=0; i<n; i++)
@@ -42,12 +38,6 @@ enum comp compare_graphs(setword graph_hash0, setword graph_hash1, graph *g0, gr
         if (g0[i] > g1[i]) return GREATER_THAN;
     }
     return EQUAL;
-}
-
-static void compress_graph(graph *g, int n, graph *compressed_g)
-{
-    for (int i=0; i<n; i++)
-        compressed_g[i] = g[i];
 }
 
 //static unsigned long long calc_invariant(graph *g, int n)
@@ -72,17 +62,24 @@ static void compress_graph(graph *g, int n, graph *compressed_g)
 //    return invar;
 //}
 
-static struct GraphPlus * make_graph_plus(graph *g, int n, struct GraphPlus *gp) {
+struct GraphPlus * make_graph_plus(graph *g, int n, int edge_count,
+        int min_deg, int max_deg, struct GraphPlus *gp) {
     gp->left = NULL;
     gp->right = NULL;
     gp->n = n;
+    gp->edge_count = edge_count;
+    gp->min_deg = min_deg;
+    gp->max_deg = max_deg;
     gp->hash = hash_graph(g, n);
-    compress_graph(g, n, gp->graph);
+    for (int i=0; i<n; i++)
+        gp->graph[i] = g[i];
+    for (int i=n; i<MAXN; i++)
+        gp->graph[i] = 0;
     return gp;
 }
 
 // Returns pointer to new graph if it was added, or NULL if graph was in set already
-struct GraphPlus * gp_list_add(struct GraphPlusList *list, graph *g, int n)
+struct GraphPlus * gp_list_add(struct GraphPlusList *list, graph *g, int n, int edge_count, int min_deg, int max_deg)
 {
     struct GraphPlus **root = &list->tree_head;
     setword g_hash = hash_graph(g, n);   // TODO: reduce duplicate work in calling hash_graph multiple times?
@@ -93,8 +90,8 @@ struct GraphPlus * gp_list_add(struct GraphPlusList *list, graph *g, int n)
             default: return NULL;    // the element is in the list
         }
     }
-    struct GraphPlus *gp = alloc_graph_plus(n);
-    make_graph_plus(g, n, gp);
+    struct GraphPlus *gp = emalloc(sizeof(struct GraphPlus));
+    make_graph_plus(g, n, edge_count, min_deg, max_deg, gp);
     *root = gp;
     list->sz++;
     return gp;

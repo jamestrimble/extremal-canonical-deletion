@@ -187,7 +187,7 @@ bool ok_not_to_try_min_deg(int n, int min_deg, int edge_count)
     return lb > 1 && a > edge_count;
 }
 
-void add_vertex(graph *g, int g_n, int g_edge_count, int g_min_deg, int g_max_deg);
+void add_vertex(struct GraphPlus *gp);
 
 void show_graph2(struct GraphPlus *gp)
 {
@@ -202,15 +202,6 @@ void show_graph2(struct GraphPlus *gp)
     printf("\n");
 }
 
-int get_max_deg(graph *g, int n, int *degs)
-{
-    int max_deg = 0;
-    for (int i=0; i<n; i++)
-        if (degs[i] > max_deg)
-            max_deg = degs[i];
-    return max_deg;
-}
-
 bool graph_last_vtx_has_min_deg(graph *g, int n, int *degs) {
     for (int i=0; i<n-1; i++)
         if (degs[i] < degs[n-1])
@@ -218,98 +209,111 @@ bool graph_last_vtx_has_min_deg(graph *g, int n, int *degs) {
     return true;
 }
 
-void output_graph2(graph *g, int n, setword neighbours, struct GraphPlusList *list)
+// gp is the graph that we're augmenting
+void output_graph2(struct GraphPlus *gp, setword neighbours, bool max_deg_incremented,
+        struct GraphPlusList *list)
 {
+    int n = gp->n + 1;
     while (neighbours) {
         int nb;
         TAKEBIT(nb, neighbours);
-        ADDONEEDGE(g, n-1, nb, 1);
+        ADDONEEDGE(gp->graph, n-1, nb, 1);
     }
     int degs[MAXN];
     unsigned edge_endpoint_count = 0;
     for (int i=0; i<n; i++) {
-        degs[i] = POPCOUNT(g[i]);
+        degs[i] = POPCOUNT(gp->graph[i]);
         edge_endpoint_count += degs[i];
     }
-    int edge_count = edge_endpoint_count >> 1; // TODO: avoid having to calculate this like this?
-    int max_deg = get_max_deg(g, n, degs);
-    if (graph_last_vtx_has_min_deg(g, n, degs) &&
-            deletion_is_canonical(g, n, degs[n-1], degs)) {
+    int edge_count = gp->edge_count + degs[n-1];
+    int max_deg = gp->max_deg + max_deg_incremented;
+    if (graph_last_vtx_has_min_deg(gp->graph, n, degs) &&
+            deletion_is_canonical(gp->graph, n, degs[n-1], degs)) {
         graph new_g[MAXN];
-        make_canonical(g, n, new_g);
-        struct GraphPlus *gp = gp_list_add(list, new_g, n);
-        if (gp) {
-            if (n==global_n) {
-                show_graph2(gp);
-            } else {
-                add_vertex(new_g, n, edge_count, degs[n-1], max_deg);
-            }
-        }
+        make_canonical(gp->graph, n, new_g);
+        gp_list_add(list, new_g, n, edge_count, degs[n-1], max_deg);
     }
 
     // Delete the edges that were added
-    while (g[n-1]) {
+    while (gp->graph[n-1]) {
         int nb;
-        TAKEBIT(nb, g[n-1]);
-        DELELEMENT(&g[nb], n-1);
+        TAKEBIT(nb, gp->graph[n-1]);
+        DELELEMENT(&gp->graph[nb], n-1);
     }
 }
 
 
 // Arguments:
-// g:                        the graph we're trying to extend
-// g_min_deg:                the min degree of g
-// n:                        degree of new graph
+// gp:                       the graph we're trying to extend
 // have_short_path:          is there a path of length <= MIN_GIRTH-3 from i to j?
 // neighbours:               neighbours already chosen for the new vertex
 // candidate_neighbours:     other neighbours that might be chosen for the new vertex
 // list:                     a pointer to list of new graphs that is being built
-void search2(graph *g, int g_edge_count, int g_min_deg, int g_max_deg, int n,
-        setword *have_short_path,
+void search2(struct GraphPlus *gp, setword *have_short_path,
         setword neighbours, setword candidate_neighbours, bool max_deg_incremented,
         struct GraphPlusList *list) 
 {
     int neighbours_count = POPCOUNT(neighbours);
 
-    if (neighbours_count > g_min_deg + 1)
+    if (neighbours_count > gp->min_deg + 1)
         return;
 
     if (augmentation_is_in_set((struct Augmentation) {
-                .num_vertices=n-1,
-                .num_edges=g_edge_count,
-                .min_deg=g_min_deg,
-                .max_deg=g_max_deg,
+                .num_vertices=gp->n,
+                .num_edges=gp->edge_count,
+                .min_deg=gp->min_deg,
+                .max_deg=gp->max_deg,
                 .new_vertex_deg=neighbours_count,
                 .max_deg_incremented=max_deg_incremented
             }))
-        output_graph2(g, n, neighbours, list);
+        output_graph2(gp, neighbours, max_deg_incremented, list);
 
     while (candidate_neighbours) {
         int cand;
         TAKEBIT(cand, candidate_neighbours);
         ADDELEMENT(&neighbours, cand);
-        if (!max_deg_incremented && POPCOUNT(g[cand]) == g_max_deg)
+        if (!max_deg_incremented && POPCOUNT(gp->graph[cand]) == gp->max_deg)
             max_deg_incremented = true;
         setword new_candidates = candidate_neighbours & ~have_short_path[cand];
-        search2(g, g_edge_count, g_min_deg, g_max_deg, n, have_short_path, neighbours, new_candidates, max_deg_incremented, list);
+        search2(gp, have_short_path, neighbours, new_candidates, max_deg_incremented, list);
         DELELEMENT(&neighbours, cand);
     }
 }
 
-void add_vertex(graph *g, int g_n, int g_edge_count, int g_min_deg, int g_max_deg)
+void traverse_tree(struct GraphPlus *node,
+        void (*callback)(struct GraphPlus *))
 {
-    if (g_n == SPLITTING_ORDER && global_mod!=0 && hash_graph(g, g_n)%global_mod != global_res)
+    if (node == NULL || callback == NULL)
+        return;
+    traverse_tree(node->left, callback);
+    callback(node);
+    traverse_tree(node->right, callback);
+}
+
+void visit_graph(struct GraphPlus *gp)
+{
+    if (gp->n==global_n) {
+        show_graph2(gp);
+    } else {
+        add_vertex(gp);
+    }
+}
+
+void add_vertex(struct GraphPlus *gp)
+{
+    if (gp->n == SPLITTING_ORDER && global_mod!=0 && gp->hash%global_mod != global_res)
         return;
 
     setword have_short_path[MAXN];
-    all_pairs_check_for_short_path(g, g_n, MIN_GIRTH-3, have_short_path);
+    all_pairs_check_for_short_path(gp->graph, gp->n, MIN_GIRTH-3, have_short_path);
 
     setword candidate_neighbours = 0;
-    for (int l=0; l<g_n; l++)
+    for (int l=0; l<gp->n; l++)
         ADDELEMENT(&candidate_neighbours, l);
 
     struct GraphPlusList list = make_gp_list();
-    search2(g, g_edge_count, g_min_deg, g_max_deg, g_n+1, have_short_path, 0, candidate_neighbours, false, &list);
+    search2(gp, have_short_path, 0, candidate_neighbours, false, &list);
+    traverse_tree(list.tree_head, visit_graph);
     free_tree(&list.tree_head);
 }
 
@@ -366,7 +370,9 @@ void find_extremal_graphs(int n, int edge_count, clock_t start_time)
 
     graph g[MAXN];
     EMPTYGRAPH(g,1,MAXN);
-    add_vertex(g, 1, 0, 0, 0);
+    struct GraphPlus gp;
+    make_graph_plus(g, 1, 0, 0, 0, &gp);
+    add_vertex(&gp);
 }
 
 int main(int argc, char *argv[])

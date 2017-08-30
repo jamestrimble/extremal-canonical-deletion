@@ -18,6 +18,9 @@ struct GraphPlus {
     struct GraphPlus *left;   // left child in binary search tree
     struct GraphPlus *right;   // right child in binary search tree
     int n;
+    int edge_count;
+    int min_deg;
+    int max_deg;
     graph graph[MAXN];
 };
 
@@ -34,7 +37,10 @@ setword hash_graph(graph *g, int n);
 
 enum comp compare_graphs(setword graph_hash0, setword graph_hash1, graph *g0, graph *g1, int n);
 
+struct GraphPlus * make_graph_plus(graph *g, int n, int edge_count,
+        int min_deg, int max_deg, struct GraphPlus *gp);
+
 // Returns pointer to new graph if it was added, or NULL if graph was in set already
-struct GraphPlus * gp_list_add(struct GraphPlusList *list, graph *g, int n);
+struct GraphPlus * gp_list_add(struct GraphPlusList *list, graph *g, int n, int edge_count, int min_deg, int max_deg);
 
 void show_graph(struct GraphPlus *gp, void *ignored);

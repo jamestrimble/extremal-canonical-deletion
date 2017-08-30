@@ -42,24 +42,6 @@ void delete_neighbourhood(int v, graph *g)
     }
 }
 
-//static unsigned long long calc_invariant(graph *g, int n)
-//{
-//    unsigned long long invar = 0ull;
-//    int degs[MAXN];
-//    for (int i=0; i<n; i++)
-//        degs[i] = POPCOUNT(g[i]);
-//
-//    for (int i=0; i<n; i++) {
-//        setword neighbourhood = g[i];
-//        int w;
-//        while (neighbourhood) {
-//            TAKEBIT(w, neighbourhood);
-//            invar += degs[i] * degs[w] * degs[w];
-//        }
-//    }
-//    return invar;
-//}
-
 void make_canonical(graph *g, int n, graph *canon_g)
 {
     int lab[MAXN],ptn[MAXN],orbits[MAXN];
@@ -88,13 +70,6 @@ bool deletion_is_better(int v, graph *g, int n)
             ADDONEEDGE(g1, v, nb, 1);
         }
     }
-
-//    unsigned long long invar0 = calc_invariant(g0, n-1);
-//    unsigned long long invar1 = calc_invariant(g1, n-1);
-//    if (invar0 < invar1)
-//        return true;
-//    if (invar0 > invar1)
-//        return false;
 
     graph g1_canon[MAXN];
     make_canonical(g1, n-1, g1_canon);

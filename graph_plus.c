@@ -40,28 +40,6 @@ enum comp compare_graphs(setword graph_hash0, setword graph_hash1, graph *g0, gr
     return EQUAL;
 }
 
-//static unsigned long long calc_invariant(graph *g, int n)
-//{
-//    return 0;
-//    unsigned long long invar = 0ull;
-//    int degs[MAXN];
-//    for (int i=0; i<n; i++)
-//        degs[i] = POPCOUNT(g[i]);
-//
-//    for (int i=0; i<n; i++) {
-//        setword neighbourhood = g[i];
-//        int w;
-//        while (neighbourhood) {
-//            TAKEBIT(w, neighbourhood);
-//            invar += degs[i] * degs[w] * degs[w];
-//        }
-//    }
-//    invar = (invar ^ (invar >> 30)) * 0xbf58476d1ce4e5b9ull;
-//    invar = (invar ^ (invar >> 27)) * 0x94d049bb133111ebull;
-//    invar = invar ^ (invar >> 31);
-//    return invar;
-//}
-
 struct GraphPlus * make_graph_plus(graph *g, int n, int edge_count,
         int min_deg, int max_deg, struct GraphPlus *gp) {
     gp->left = NULL;

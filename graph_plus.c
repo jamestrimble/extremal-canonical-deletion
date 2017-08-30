@@ -50,15 +50,6 @@ static void compress_graph(graph *g, int n, graph *compressed_g)
         compressed_g[i] = g[i];
 }
 
-void decompress_graph(graph *compressed_g, int n, graph *g)
-{
-    // TODO: do we have to go right up to MAXN?
-    EMPTYGRAPH(g, 1, MAXN);
-
-    for (int i=0; i<n; i++)
-        g[i] = compressed_g[i];
-}
-
 //static unsigned long long calc_invariant(graph *g, int n)
 //{
 //    return 0;

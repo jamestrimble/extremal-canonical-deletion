@@ -34,8 +34,6 @@ setword hash_graph(graph *g, int n);
 
 enum comp compare_graphs(setword graph_hash0, setword graph_hash1, graph *g0, graph *g1, int n);
 
-void decompress_graph(graph *compressed_g, int n, graph *g);
-
 // Returns pointer to new graph if it was added, or NULL if graph was in set already
 struct GraphPlus * gp_list_add(struct GraphPlusList *list, graph *g, int n);
 

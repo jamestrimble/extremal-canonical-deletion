@@ -42,5 +42,3 @@ struct GraphPlus * make_graph_plus(graph *g, int n, int edge_count,
 
 // Returns pointer to new graph if it was added, or NULL if graph was in set already
 struct GraphPlus * gp_list_add(struct GraphPlusList *list, graph *g, int n, int edge_count, int min_deg, int max_deg);
-
-void show_graph(struct GraphPlus *gp, void *ignored);

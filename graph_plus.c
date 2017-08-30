@@ -96,16 +96,3 @@ struct GraphPlus * gp_list_add(struct GraphPlusList *list, graph *g, int n, int 
     list->sz++;
     return gp;
 }
-
-void show_graph(struct GraphPlus *gp, void *ignored)
-{
-    printf("Graph with %d vertices\n", gp->n);
-    for (int i=0; i<gp->n; i++) {
-        for (int j=0; j<gp->n; j++) {
-            printf("%s ", ISELEMENT(&gp->graph[i], j) ? "X" : ".");
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-

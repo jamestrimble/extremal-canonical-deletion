@@ -189,7 +189,7 @@ bool ok_not_to_try_min_deg(int n, int min_deg, int edge_count)
 
 void add_vertex(struct GraphPlus *gp);
 
-void show_graph2(struct GraphPlus *gp)
+void show_graph(struct GraphPlus *gp)
 {
     global_graph_count++;
     printf("Graph with %d vertices\n", gp->n);
@@ -210,7 +210,7 @@ bool graph_last_vtx_has_min_deg(graph *g, int n, int *degs) {
 }
 
 // gp is the graph that we're augmenting
-void output_graph2(struct GraphPlus *gp, setword neighbours, bool max_deg_incremented,
+void output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_incremented,
         struct GraphPlusList *list)
 {
     int n = gp->n + 1;
@@ -249,7 +249,7 @@ void output_graph2(struct GraphPlus *gp, setword neighbours, bool max_deg_increm
 // neighbours:               neighbours already chosen for the new vertex
 // candidate_neighbours:     other neighbours that might be chosen for the new vertex
 // list:                     a pointer to list of new graphs that is being built
-void search2(struct GraphPlus *gp, setword *have_short_path,
+void search(struct GraphPlus *gp, setword *have_short_path,
         setword neighbours, setword candidate_neighbours, bool max_deg_incremented,
         struct GraphPlusList *list) 
 {
@@ -266,7 +266,7 @@ void search2(struct GraphPlus *gp, setword *have_short_path,
                 .new_vertex_deg=neighbours_count,
                 .max_deg_incremented=max_deg_incremented
             }))
-        output_graph2(gp, neighbours, max_deg_incremented, list);
+        output_graph(gp, neighbours, max_deg_incremented, list);
 
     while (candidate_neighbours) {
         int cand;
@@ -275,7 +275,7 @@ void search2(struct GraphPlus *gp, setword *have_short_path,
         if (!max_deg_incremented && POPCOUNT(gp->graph[cand]) == gp->max_deg)
             max_deg_incremented = true;
         setword new_candidates = candidate_neighbours & ~have_short_path[cand];
-        search2(gp, have_short_path, neighbours, new_candidates, max_deg_incremented, list);
+        search(gp, have_short_path, neighbours, new_candidates, max_deg_incremented, list);
         DELELEMENT(&neighbours, cand);
     }
 }
@@ -293,7 +293,7 @@ void traverse_tree(struct GraphPlus *node,
 void visit_graph(struct GraphPlus *gp)
 {
     if (gp->n==global_n) {
-        show_graph2(gp);
+        show_graph(gp);
     } else {
         add_vertex(gp);
     }
@@ -312,7 +312,7 @@ void add_vertex(struct GraphPlus *gp)
         ADDELEMENT(&candidate_neighbours, l);
 
     struct GraphPlusList list = make_gp_list();
-    search2(gp, have_short_path, 0, candidate_neighbours, false, &list);
+    search(gp, have_short_path, 0, candidate_neighbours, false, &list);
     traverse_tree(list.tree_head, visit_graph);
     free_tree(&list.tree_head);
 }

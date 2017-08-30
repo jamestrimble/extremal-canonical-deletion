@@ -81,7 +81,6 @@ bool deletion_is_better(int v, graph *g, int n)
 
 // For correctness, we have to be really careful about what rules we
 // put in here.
-// Tie-break by sum of neighbours' neighbours' degrees
 // Assumption: the last vertex of g has degree equal to min_deg
 bool deletion_is_canonical(graph *g, int n, int min_deg, int *degs) {
     int n0 = num_neighbours_of_deg_d(g, n-1, min_deg, degs);

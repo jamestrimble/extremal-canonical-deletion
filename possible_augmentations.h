@@ -10,8 +10,8 @@ struct Augmentation {
     bool max_deg_incremented;
 };
 
-bool augmentation_is_in_set(struct Augmentation aug);
+bool augmentation_is_in_set(struct Augmentation *aug);
 
-bool add_augmentation_to_set(struct Augmentation aug);
+bool add_augmentation_to_set(struct Augmentation *aug);
 
 void clean_up_augmentation_lists();

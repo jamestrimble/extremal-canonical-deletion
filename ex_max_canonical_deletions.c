@@ -240,10 +240,9 @@ void search(struct GraphPlus *gp, setword *have_short_path,
         int cand;
         TAKEBIT(cand, candidate_neighbours);
         ADDELEMENT(&neighbours, cand);
-        if (!max_deg_incremented && POPCOUNT(gp->graph[cand]) == gp->max_deg)
-            max_deg_incremented = true;
         setword new_candidates = candidate_neighbours & ~have_short_path[cand];
-        search(gp, have_short_path, neighbours, new_candidates, max_deg_incremented, list);
+        search(gp, have_short_path, neighbours, new_candidates,
+                max_deg_incremented || POPCOUNT(gp->graph[cand]) == gp->max_deg, list);
         DELELEMENT(&neighbours, cand);
     }
 }

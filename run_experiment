@@ -3,6 +3,7 @@
 MINGIRTH=$1
 MAXN=$2
 THREADS=$3
+MOD=$4
 
 mkdir -p program-output
 mkdir -p output-summary
@@ -18,7 +19,7 @@ for n in $(seq 2 $MAXN); do
     EDGES=$(($EDGES+$MAXEDGEINCR))
     while true
     do
-	seq 0 $((THREADS-1)) | xargs -n1 -s256 -x -P$THREADS -I'thr' sh -c "./ex_max_canonical_deletions $MINGIRTH $n $EDGES thr $THREADS > program-output/$MINGIRTH-$n-$EDGES-thr-$THREADS.out"
+	seq 0 $((MOD-1)) | xargs -n1 -s256 -x -P$THREADS -I'thr' sh -c "./ex_max_canonical_deletions $MINGIRTH $n $EDGES thr $MOD > program-output/$MINGIRTH-$n-$EDGES-thr-$MOD.out"
 	NUMGRAPHS=$(cat program-output/$MINGIRTH-$n-$EDGES-*.out | awk '/Total graph count/ {count += $4} END {print count}')
 	if [ "$NUMGRAPHS" -ne "0" ]
 	then

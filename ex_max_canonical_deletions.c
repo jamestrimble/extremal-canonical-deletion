@@ -111,39 +111,36 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int *degs) {
     return true;
 }
 
-void add_vertex(struct GraphPlus *gp);
-
 // gp is the graph that we're augmenting
 void output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_incremented,
         struct GraphPlusList *list)
 {
     int n = gp->n + 1;
+
+    graph new_g[MAXN];
+    for (int i=0; i<MAXN; i++)
+        new_g[i] = gp->graph[i];
+
     while (neighbours) {
         int nb;
         TAKEBIT(nb, neighbours);
-        ADDONEEDGE(gp->graph, n-1, nb, 1);
-    }
-    int degs[MAXN];
-    degs[n-1] = POPCOUNT(gp->graph[n-1]);
-    for (int i=0; i<n-1; i++) {
-        degs[i] = POPCOUNT(gp->graph[i]);
-        if (degs[i] < degs[n-1])   // The last vertex must have minimum degree
-            goto clean_up_output_graph;
-    }
-    if (deletion_is_canonical(gp->graph, n, degs[n-1], degs)) {
-        graph new_g[MAXN];
-        make_canonical(gp->graph, n, new_g);
-        int edge_count = gp->edge_count + degs[n-1];
-        int max_deg = gp->max_deg + max_deg_incremented;
-        gp_list_add(list, new_g, n, edge_count, degs[n-1], max_deg);
+        ADDONEEDGE(new_g, n-1, nb, 1);
     }
 
-clean_up_output_graph:
-    // Delete the edges that were added
-    while (gp->graph[n-1]) {
-        int nb;
-        TAKEBIT(nb, gp->graph[n-1]);
-        DELELEMENT(&gp->graph[nb], n-1);
+    int degs[MAXN];
+    degs[n-1] = POPCOUNT(new_g[n-1]);
+    for (int i=0; i<n-1; i++) {
+        degs[i] = POPCOUNT(new_g[i]);
+        if (degs[i] < degs[n-1])   // The last vertex must have minimum degree
+            return;
+    }
+
+    if (deletion_is_canonical(new_g, n, degs[n-1], degs)) {
+        graph new_g_canonical[MAXN];
+        make_canonical(new_g, n, new_g_canonical);
+        int edge_count = gp->edge_count + degs[n-1];
+        int max_deg = gp->max_deg + max_deg_incremented;
+        gp_list_add(list, new_g_canonical, n, edge_count, degs[n-1], max_deg);
     }
 }
 
@@ -165,9 +162,7 @@ void search(struct GraphPlus *gp, setword *have_short_path,
                 .min_deg=neighbours_count,
                 .max_deg=gp->max_deg+max_deg_incremented
             }))
-    {
         output_graph(gp, neighbours, max_deg_incremented, list);
-    }
 
     if (neighbours_count == gp->min_deg + 1)
         return;
@@ -192,6 +187,8 @@ void traverse_tree(struct GraphPlus *node,
     callback(node);
     traverse_tree(node->right, callback);
 }
+
+void add_vertex(struct GraphPlus *gp);
 
 void visit_graph(struct GraphPlus *gp)
 {

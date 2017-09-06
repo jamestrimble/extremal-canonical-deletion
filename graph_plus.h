@@ -27,12 +27,12 @@ struct GraphPlus {
     graph graph[MAXN];
 };
 
-struct GraphPlusList {
+struct GraphPlusSet {
     unsigned long long sz;
     struct GraphPlus *tree_head;   // head of binary search tree
 };
 
-struct GraphPlusList make_gp_list();
+struct GraphPlusSet make_gp_set();
 
 void free_tree(struct GraphPlus **node_ptr);
 
@@ -44,6 +44,6 @@ struct GraphPlus * make_graph_plus(graph *g, int n, int edge_count,
         int min_deg, int max_deg, struct GraphPlus *gp);
 
 // Returns pointer to new graph if it was added, or NULL if graph was in set already
-struct GraphPlus * gp_list_add(struct GraphPlusList *list, graph *g, int n, int edge_count, int min_deg, int max_deg);
+struct GraphPlus * gp_set_add(struct GraphPlusSet *gp_set, graph *g, int n, int edge_count, int min_deg, int max_deg);
 
 #endif

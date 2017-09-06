@@ -1,9 +1,9 @@
 #include "graph_plus.h"
 #include "util.h"
 
-struct GraphPlusList make_gp_list()
+struct GraphPlusSet make_gp_set()
 {
-    return (struct GraphPlusList) {.sz=0, .tree_head=0};
+    return (struct GraphPlusSet) {.sz=0, .tree_head=0};
 }
 
 void free_tree(struct GraphPlus **node_ptr)
@@ -57,19 +57,19 @@ struct GraphPlus * make_graph_plus(graph *g, int n, int edge_count,
 }
 
 // Returns pointer to new graph if it was added, or NULL if graph was in set already
-struct GraphPlus * gp_list_add(struct GraphPlusList *list, graph *g, int n, int edge_count, int min_deg, int max_deg)
+struct GraphPlus * gp_set_add(struct GraphPlusSet *gp_set, graph *g, int n, int edge_count, int min_deg, int max_deg)
 {
-    struct GraphPlus **root = &list->tree_head;
+    struct GraphPlus **root = &gp_set->tree_head;
     struct GraphPlus *gp = emalloc(sizeof(struct GraphPlus));
     make_graph_plus(g, n, edge_count, min_deg, max_deg, gp);
     while (*root) {
         switch (compare_graphs(gp->hash, (*root)->hash, g, (*root)->graph, n)) {
             case LESS_THAN: root = &((*root)->left);  break;
             case GREATER_THAN: root = &((*root)->right); break;
-            default: free(gp); return NULL;    // the element is in the list
+            default: free(gp); return NULL;    // the element is in the set
         }
     }
     *root = gp;
-    list->sz++;
+    gp_set->sz++;
     return gp;
 }

@@ -8,8 +8,6 @@
 
 #define SPLITTING_ORDER 19
 
-// TODO: re-name lists to sets, where appropriate
-
 static int MIN_GIRTH;
 
 static DEFAULTOPTIONS_GRAPH(options);
@@ -113,7 +111,7 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int *degs) {
 
 // gp is the graph that we're augmenting
 void output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_incremented,
-        struct GraphPlusList *list)
+        struct GraphPlusSet *gp_set)
 {
     int n = gp->n + 1;
 
@@ -140,7 +138,7 @@ void output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_increme
         make_canonical(new_g, n, new_g_canonical);
         int edge_count = gp->edge_count + degs[n-1];
         int max_deg = gp->max_deg + max_deg_incremented;
-        gp_list_add(list, new_g_canonical, n, edge_count, degs[n-1], max_deg);
+        gp_set_add(gp_set, new_g_canonical, n, edge_count, degs[n-1], max_deg);
     }
 }
 
@@ -149,10 +147,10 @@ void output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_increme
 // have_short_path:          is there a path of length <= MIN_GIRTH-3 from i to j?
 // neighbours:               neighbours already chosen for the new vertex
 // candidate_neighbours:     other neighbours that might be chosen for the new vertex
-// list:                     a pointer to list of new graphs that is being built
+// gp_set:                     a pointer to set of new graphs that is being built
 void search(struct GraphPlus *gp, setword *have_short_path,
         setword neighbours, setword candidate_neighbours, bool max_deg_incremented,
-        struct GraphPlusList *list) 
+        struct GraphPlusSet *gp_set) 
 {
     int neighbours_count = POPCOUNT(neighbours);
 
@@ -162,7 +160,7 @@ void search(struct GraphPlus *gp, setword *have_short_path,
                 .min_deg=neighbours_count,
                 .max_deg=gp->max_deg+max_deg_incremented
             }))
-        output_graph(gp, neighbours, max_deg_incremented, list);
+        output_graph(gp, neighbours, max_deg_incremented, gp_set);
 
     if (neighbours_count == gp->min_deg + 1)
         return;
@@ -173,7 +171,7 @@ void search(struct GraphPlus *gp, setword *have_short_path,
         ADDELEMENT(&neighbours, cand);
         setword new_candidates = candidate_neighbours & ~have_short_path[cand];
         search(gp, have_short_path, neighbours, new_candidates,
-                max_deg_incremented || POPCOUNT(gp->graph[cand]) == gp->max_deg, list);
+                max_deg_incremented || POPCOUNT(gp->graph[cand]) == gp->max_deg, gp_set);
         DELELEMENT(&neighbours, cand);
     }
 }
@@ -206,10 +204,10 @@ void visit_graph(struct GraphPlus *gp)
         for (int l=0; l<gp->n; l++)
             ADDELEMENT(&candidate_neighbours, l);
 
-        struct GraphPlusList list = make_gp_list();
-        search(gp, have_short_path, 0, candidate_neighbours, false, &list);
-        traverse_tree(list.tree_head, visit_graph);
-        free_tree(&list.tree_head);
+        struct GraphPlusSet gp_set = make_gp_set();
+        search(gp, have_short_path, 0, candidate_neighbours, false, &gp_set);
+        traverse_tree(gp_set.tree_head, visit_graph);
+        free_tree(&gp_set.tree_head);
     }
 }
 

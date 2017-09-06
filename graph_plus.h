@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define MAXN 64   /* TODO: don't duplicate this */
+#define MAXN 64
 
 #include "nauty.h"
 

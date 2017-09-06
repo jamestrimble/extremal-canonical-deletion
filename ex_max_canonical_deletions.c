@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <limits.h>
 
-#define SPLITTING_ORDER 19
+#define SPLITTING_ORDER 20
 
 static int MIN_GIRTH;
 

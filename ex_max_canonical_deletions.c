@@ -119,19 +119,6 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int *degs) {
 
 void add_vertex(struct GraphPlus *gp);
 
-void show_graph(struct GraphPlus *gp)
-{
-    global_graph_count++;
-    printf("Graph with %d vertices\n", gp->n);
-    for (int i=0; i<gp->n; i++) {
-        for (int j=0; j<gp->n; j++) {
-            printf("%s ", ISELEMENT(&gp->graph[i], j) ? "X" : ".");
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-
 // gp is the graph that we're augmenting
 void output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_incremented,
         struct GraphPlusList *list)
@@ -215,6 +202,7 @@ void traverse_tree(struct GraphPlus *node,
 void visit_graph(struct GraphPlus *gp)
 {
     if (gp->n==global_n) {
+        global_graph_count++;
         show_graph(gp);
     } else {
         add_vertex(gp);

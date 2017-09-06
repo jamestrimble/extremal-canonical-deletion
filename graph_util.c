@@ -1,6 +1,4 @@
-#define MAXN 64    /* Define this before including nauty.h */
-#include "nauty.h"   /* which includes <stdio.h> and other system files */
-
+#include "graph_plus.h"
 #include "graph_util.h"
 
 #include <stdbool.h>
@@ -79,5 +77,17 @@ bool graph_max_deg_eq_target(graph *g, int n, int target, int *degs) {
         if (degs[i] > max_deg)
             max_deg = degs[i];
     return max_deg == target;
+}
+
+void show_graph(struct GraphPlus *gp)
+{
+    printf("Graph with %d vertices\n", gp->n);
+    for (int i=0; i<gp->n; i++) {
+        for (int j=0; j<gp->n; j++) {
+            printf("%s ", ISELEMENT(&gp->graph[i], j) ? "X" : ".");
+        }
+        printf("\n");
+    }
+    printf("\n");
 }
 

@@ -44,6 +44,29 @@ static bool ok_not_to_try_min_deg(int n, int min_deg, int edge_count)
     return lb > 1 && a > edge_count;
 }
 
+static bool girth_at_least_6_can_place_enough_edges_to_star(int n, int min_deg, int max_deg,
+        int edge_count, int tree_order)
+{
+    // Taking advantage of the fact that if min girth is 6, then
+    // there can be no extra edges added among vertices in the big star
+    int tree_edge_count = tree_order-1;
+    int extra_edges_required = edge_count - tree_edge_count;
+    int num_non_tree_vertices = n - tree_order;
+    // i is number of vertices of degree max_deg in the entire graph
+    int top = min_deg==max_deg ? n : n-1;
+    for (int i=1; i<=top; i++) {
+        if (i*max_deg + (n-i)*min_deg <= edge_count*2) {
+            // b is an upper bound on the number of non-tree vertices with degree max_deg
+            int b = i - 1;
+            if (b > num_non_tree_vertices)
+                b = num_non_tree_vertices;
+            if (b*max_deg + (num_non_tree_vertices-b)*(max_deg-1) >= extra_edges_required)
+                return true;
+        }
+    }
+    return false;
+}
+
 static bool min_and_max_deg_are_feasible(int n, int min_deg, int max_deg, int edge_count, int min_girth)
 {
     if (max_deg == 0)
@@ -59,21 +82,15 @@ static bool min_and_max_deg_are_feasible(int n, int min_deg, int max_deg, int ed
         return false;
 
     int tree_order = min_deg*max_deg+1;
-    int extra_vv_required = 0;
-    if (min_girth >= 6) {
-        // Taking advantage of the fact that if min girth is 6, then
-        // there can be no extra edges added among vertices in the big star
-        int tree_edge_count = tree_order-1;
-        int extra_edges_required = edge_count - tree_edge_count;
-        if (extra_edges_required<0) extra_edges_required=0;   //TODO: is this necessary?
-        extra_vv_required =
-            extra_edges_required/max_deg + (extra_edges_required%max_deg>0);
-    }
-    if (tree_order + extra_vv_required <= n) {
-        return true;
-    }
 
-    return false;
+    if (tree_order > n)
+        return false;
+
+    if (min_girth >= 6 && !girth_at_least_6_can_place_enough_edges_to_star(
+                n, min_deg, max_deg, edge_count, tree_order))
+        return false;
+
+    return true;
 }
 
 static void make_possible_graph_types_recurse(int n, int edge_count, int min_deg, int max_deg, int min_girth)

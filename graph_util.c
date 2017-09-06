@@ -26,14 +26,14 @@ unsigned long long weighted_nb_nb_deg_sum(graph *g, int v, int *degs) {
 }
 
 int num_neighbours_of_deg_d(graph *g, int v, int d, int *degs) {
-    int deg_sum = 0;
+    int count = 0;
     setword nb = g[v];
     while (nb) {
         int w;
         TAKEBIT(w, nb);
-        deg_sum += degs[w]==d;
+        count += degs[w]==d;
     }
-    return deg_sum;
+    return count;
 }
 
 // Which pairs of vertices have a path of length max_path_len or less?

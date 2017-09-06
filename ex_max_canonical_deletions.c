@@ -1,8 +1,3 @@
-/* This program ...
-
-   This version uses a fixed limit for MAXN.
-*/
-
 #include "graph_plus.h"
 #include "util.h"
 #include "graph_util.h"
@@ -10,7 +5,6 @@
 
 #include <stdbool.h>
 #include <limits.h>
-#include <time.h>
 
 #define SPLITTING_ORDER 19
 
@@ -228,7 +222,7 @@ void add_vertex(struct GraphPlus *gp)
 }
 
 
-void find_extremal_graphs(int n, int edge_count, clock_t start_time)
+void find_extremal_graphs(int n, int edge_count)
 {
     if (global_mod > 0 && global_res > 0 && n <= SPLITTING_ORDER)
         return;
@@ -283,9 +277,7 @@ int main(int argc, char *argv[])
 
     nauty_check(WORDSIZE,m,n,NAUTYVERSIONID);
 
-    clock_t start_time = clock();
-
-    find_extremal_graphs(n, edge_count, start_time);
+    find_extremal_graphs(n, edge_count);
 
     printf("Nauty calls: %lld\n", nauty_calls);
     printf("Total graph count: %llu\n", global_graph_count);

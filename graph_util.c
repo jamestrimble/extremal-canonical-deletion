@@ -64,21 +64,6 @@ void all_pairs_check_for_short_path(graph *g, int n, int max_path_len, setword *
     }
 }
 
-bool graph_min_deg_geq_target(graph *g, int n, int target, int *degs) {
-    for (int i=0; i<n; i++)
-        if (degs[i] < target)
-            return false;
-    return true;
-}
-
-bool graph_max_deg_eq_target(graph *g, int n, int target, int *degs) {
-    int max_deg = 0;
-    for (int i=0; i<n; i++)
-        if (degs[i] > max_deg)
-            max_deg = degs[i];
-    return max_deg == target;
-}
-
 void show_graph(struct GraphPlus *gp)
 {
     printf("Graph with %d vertices\n", gp->n);

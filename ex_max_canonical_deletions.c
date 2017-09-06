@@ -188,36 +188,30 @@ void traverse_tree(struct GraphPlus *node,
     traverse_tree(node->right, callback);
 }
 
-void add_vertex(struct GraphPlus *gp);
-
 void visit_graph(struct GraphPlus *gp)
 {
     if (gp->n==global_n) {
+        // output graph
         global_graph_count++;
         show_graph(gp);
     } else {
-        add_vertex(gp);
+        // add a vertex to the graph
+        if (gp->n == SPLITTING_ORDER && global_mod!=0 && gp->hash%global_mod != global_res)
+            return;
+
+        setword have_short_path[MAXN];
+        all_pairs_check_for_short_path(gp->graph, gp->n, MIN_GIRTH-3, have_short_path);
+
+        setword candidate_neighbours = 0;
+        for (int l=0; l<gp->n; l++)
+            ADDELEMENT(&candidate_neighbours, l);
+
+        struct GraphPlusList list = make_gp_list();
+        search(gp, have_short_path, 0, candidate_neighbours, false, &list);
+        traverse_tree(list.tree_head, visit_graph);
+        free_tree(&list.tree_head);
     }
 }
-
-void add_vertex(struct GraphPlus *gp)
-{
-    if (gp->n == SPLITTING_ORDER && global_mod!=0 && gp->hash%global_mod != global_res)
-        return;
-
-    setword have_short_path[MAXN];
-    all_pairs_check_for_short_path(gp->graph, gp->n, MIN_GIRTH-3, have_short_path);
-
-    setword candidate_neighbours = 0;
-    for (int l=0; l<gp->n; l++)
-        ADDELEMENT(&candidate_neighbours, l);
-
-    struct GraphPlusList list = make_gp_list();
-    search(gp, have_short_path, 0, candidate_neighbours, false, &list);
-    traverse_tree(list.tree_head, visit_graph);
-    free_tree(&list.tree_head);
-}
-
 
 void find_extremal_graphs(int n, int edge_count)
 {
@@ -230,7 +224,7 @@ void find_extremal_graphs(int n, int edge_count)
     EMPTYGRAPH(g,1,MAXN);
     struct GraphPlus gp;
     make_graph_plus(g, 1, 0, 0, 0, &gp);
-    add_vertex(&gp);
+    visit_graph(&gp);
 }
 
 int main(int argc, char *argv[])

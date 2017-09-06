@@ -3,16 +3,15 @@
    This version uses a fixed limit for MAXN.
 */
 
-#define MAXN 64    /* Define this before including nauty.h */
-#include "nauty.h"   /* which includes <stdio.h> and other system files */
+#include "graph_plus.h"
+#include "util.h"
+#include "graph_util.h"
+#include "possible_graph_types.h"
+
 #include <stdbool.h>
 #include <limits.h>
 #include <time.h>
 
-#include "util.h"
-#include "graph_util.h"
-#include "graph_plus.h"
-#include "possible_graph_types.h"
 
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
 

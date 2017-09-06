@@ -12,9 +12,6 @@
 #include <limits.h>
 #include <time.h>
 
-
-#define MAX(a,b) ((a)>(b) ? (a) : (b))
-
 #define SPLITTING_ORDER 19
 
 // TODO: re-name lists to sets, where appropriate
@@ -120,56 +117,6 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int *degs) {
     return true;
 }
 
-bool min_and_max_deg_are_feasible(int n, int min_deg, int max_deg, int edge_count)
-{
-    if (max_deg == 0)
-        return min_deg==0 && edge_count==0;
-
-    if (min_deg*max_deg + 1 > n)
-        return false;
-
-    if (min_deg + (max_deg*(n-1)) < edge_count*2)
-        return false;
-
-    if (max_deg + (min_deg*(n-1)) > edge_count*2)
-        return false;
-
-    int tree_order = min_deg*max_deg+1;
-    int extra_vv_required = 0;
-    if (MIN_GIRTH >= 6) {
-        // Taking advantage of the fact that if min girth is 6, then
-        // there can be no extra edges added among vertices in the big star
-        int tree_edge_count = tree_order-1;
-        int extra_edges_required = edge_count - tree_edge_count;
-        if (extra_edges_required<0) extra_edges_required=0;   //TODO: is this necessary?
-        extra_vv_required =
-            extra_edges_required/max_deg + (extra_edges_required%max_deg>0);
-    }
-    if (tree_order + extra_vv_required <= n) {
-        return true;
-    }
-
-    return false;
-}
-
-bool ok_not_to_try_min_deg(int n, int min_deg, int edge_count)
-{
-    // lb is a lower bound on the number of vertices of degree min_deg in one of
-    // the new graphs
-    int lb = 0;
-    while (lb < n && lb*min_deg + (n-lb)*(min_deg+1) > edge_count*2)
-        lb++;
-
-    // a is a lower bound on the number of edge endpoints that meet vertices
-    // of degree min_deg
-    int a = lb * min_deg;
-
-    // If there must be two adjacent vertices of degree min_deg, then there
-    // must be a way to make the graph by adding a vertex to a graph whose
-    // vertex of minimum degree has degree min_deg-1
-    return lb > 1 && a > edge_count;
-}
-
 void add_vertex(struct GraphPlus *gp);
 
 void show_graph(struct GraphPlus *gp)
@@ -218,7 +165,6 @@ clean_up_output_graph:
         DELELEMENT(&gp->graph[nb], n-1);
     }
 }
-
 
 // Arguments:
 // gp:                       the graph we're trying to extend
@@ -293,55 +239,13 @@ void add_vertex(struct GraphPlus *gp)
     free_tree(&list.tree_head);
 }
 
-void make_possible_graph_types_recurse(int n, int edge_count, int min_deg, int max_deg)
-{
-    if (n == 1)
-        return;
-    
-    struct GraphType graph_type = {
-                .num_vertices=n,
-                .num_edges=edge_count,
-                .min_deg=min_deg,
-                .max_deg=max_deg
-            };
-
-    if (add_graph_type_to_set(&graph_type)) {
-        int small_g_ec = edge_count - min_deg;
-        if (small_g_ec >= 0) {
-            // i is min deg in the graph with one vertex fewer
-            // j is max deg in the graph with one vertex fewer
-            int start_i = MAX(min_deg-1, 0);
-            for (int i=start_i; i<=MIN_DEG_UPPER_BOUND; i++) {
-                if (i==min_deg && ok_not_to_try_min_deg(n, min_deg, edge_count))
-                    continue;
-                int start_j = MAX(i, max_deg-1);
-                for (int j=start_j; j<=max_deg; j++) {
-                    if (min_and_max_deg_are_feasible(n-1, i, j, small_g_ec)) {
-                        make_possible_graph_types_recurse(n-1, small_g_ec, i, j);
-                    }
-                }
-            }
-        }
-    }
-}
-
-void make_possible_graph_types(int n, int edge_count)
-{
-    for (int min_deg=0; min_deg<=MIN_DEG_UPPER_BOUND; min_deg++) {
-        for (int max_deg=min_deg; max_deg<=MAX_DEG_UPPER_BOUND; max_deg++) {
-            if (min_and_max_deg_are_feasible(n, min_deg, max_deg, edge_count)) {
-                make_possible_graph_types_recurse(n, edge_count, min_deg, max_deg);
-            }
-        }
-    }
-}
 
 void find_extremal_graphs(int n, int edge_count, clock_t start_time)
 {
     if (global_mod > 0 && global_res > 0 && n <= SPLITTING_ORDER)
         return;
 
-    make_possible_graph_types(n, edge_count);
+    make_possible_graph_types(n, edge_count, MIN_GIRTH);
 
     graph g[MAXN];
     EMPTYGRAPH(g,1,MAXN);

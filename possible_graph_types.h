@@ -8,6 +8,8 @@ struct GraphType {
     int max_deg;
 };
 
+void make_possible_graph_types(int n, int edge_count, int min_girth);
+
 bool graph_type_is_in_set(struct GraphType *graph_type);
 
 bool add_graph_type_to_set(struct GraphType *graph_type);

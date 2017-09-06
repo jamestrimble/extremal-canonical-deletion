@@ -60,16 +60,15 @@ struct GraphPlus * make_graph_plus(graph *g, int n, int edge_count,
 struct GraphPlus * gp_list_add(struct GraphPlusList *list, graph *g, int n, int edge_count, int min_deg, int max_deg)
 {
     struct GraphPlus **root = &list->tree_head;
-    setword g_hash = hash_graph(g, n);   // TODO: reduce duplicate work in calling hash_graph multiple times?
-    while (*root) {
-        switch (compare_graphs(g_hash, (*root)->hash, g, (*root)->graph, n)) {
-            case LESS_THAN: root = &((*root)->left);  break;
-            case GREATER_THAN: root = &((*root)->right); break;
-            default: return NULL;    // the element is in the list
-        }
-    }
     struct GraphPlus *gp = emalloc(sizeof(struct GraphPlus));
     make_graph_plus(g, n, edge_count, min_deg, max_deg, gp);
+    while (*root) {
+        switch (compare_graphs(gp->hash, (*root)->hash, g, (*root)->graph, n)) {
+            case LESS_THAN: root = &((*root)->left);  break;
+            case GREATER_THAN: root = &((*root)->right); break;
+            default: free(gp); return NULL;    // the element is in the list
+        }
+    }
     *root = gp;
     list->sz++;
     return gp;

@@ -12,7 +12,7 @@
 #include "util.h"
 #include "graph_util.h"
 #include "graph_plus.h"
-#include "possible_augmentations.h"
+#include "possible_graph_types.h"
 
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
 
@@ -233,15 +233,15 @@ void search(struct GraphPlus *gp, setword *have_short_path,
 {
     int neighbours_count = POPCOUNT(neighbours);
 
-    if (augmentation_is_in_set(&(struct Augmentation) {
-                .num_vertices=gp->n,
-                .num_edges=gp->edge_count,
-                .min_deg=gp->min_deg,
-                .max_deg=gp->max_deg,
-                .new_vertex_deg=neighbours_count,
-                .max_deg_incremented=max_deg_incremented
+    if (graph_type_is_in_set(&(struct GraphType) {
+                .num_vertices=gp->n+1,
+                .num_edges=gp->edge_count+neighbours_count,
+                .min_deg=neighbours_count,
+                .max_deg=gp->max_deg+max_deg_incremented
             }))
+    {
         output_graph(gp, neighbours, max_deg_incremented, list);
+    }
 
     if (neighbours_count == gp->min_deg + 1)
         return;
@@ -294,32 +294,31 @@ void add_vertex(struct GraphPlus *gp)
     free_tree(&list.tree_head);
 }
 
-void make_possible_augmentations_recurse(int n, int edge_count, int min_deg, int max_deg)
+void make_possible_graph_types_recurse(int n, int edge_count, int min_deg, int max_deg)
 {
     if (n == 1)
         return;
     
-    int small_g_ec = edge_count - min_deg;
-    if (small_g_ec >= 0) {
-        // i is min deg in the graph with one vertex fewer
-        // j is max deg in the graph with one vertex fewer
-        int start_i = MAX(min_deg-1, 0);
-        for (int i=start_i; i<=MIN_DEG_UPPER_BOUND; i++) {
-            if (i==min_deg && ok_not_to_try_min_deg(n, min_deg, edge_count))
-                continue;
-            int start_j = MAX(i, max_deg-1);
-            for (int j=start_j; j<=max_deg; j++) {
-                if (min_and_max_deg_are_feasible(n-1, i, j, small_g_ec)) {
-                    struct Augmentation aug = {
-                                .num_vertices=n-1,
-                                .num_edges=small_g_ec,
-                                .min_deg=i,
-                                .max_deg=j,
-                                .new_vertex_deg=min_deg,
-                                .max_deg_incremented=(j==max_deg-1)
-                            };
-                    if (add_augmentation_to_set(&aug)) {
-                        make_possible_augmentations_recurse(n-1, small_g_ec, i, j);
+    struct GraphType graph_type = {
+                .num_vertices=n,
+                .num_edges=edge_count,
+                .min_deg=min_deg,
+                .max_deg=max_deg
+            };
+
+    if (add_graph_type_to_set(&graph_type)) {
+        int small_g_ec = edge_count - min_deg;
+        if (small_g_ec >= 0) {
+            // i is min deg in the graph with one vertex fewer
+            // j is max deg in the graph with one vertex fewer
+            int start_i = MAX(min_deg-1, 0);
+            for (int i=start_i; i<=MIN_DEG_UPPER_BOUND; i++) {
+                if (i==min_deg && ok_not_to_try_min_deg(n, min_deg, edge_count))
+                    continue;
+                int start_j = MAX(i, max_deg-1);
+                for (int j=start_j; j<=max_deg; j++) {
+                    if (min_and_max_deg_are_feasible(n-1, i, j, small_g_ec)) {
+                        make_possible_graph_types_recurse(n-1, small_g_ec, i, j);
                     }
                 }
             }
@@ -327,12 +326,12 @@ void make_possible_augmentations_recurse(int n, int edge_count, int min_deg, int
     }
 }
 
-void make_possible_augmentations(int n, int edge_count)
+void make_possible_graph_types(int n, int edge_count)
 {
     for (int min_deg=0; min_deg<=MIN_DEG_UPPER_BOUND; min_deg++) {
         for (int max_deg=min_deg; max_deg<=MAX_DEG_UPPER_BOUND; max_deg++) {
             if (min_and_max_deg_are_feasible(n, min_deg, max_deg, edge_count)) {
-                make_possible_augmentations_recurse(n, edge_count, min_deg, max_deg);
+                make_possible_graph_types_recurse(n, edge_count, min_deg, max_deg);
             }
         }
     }
@@ -343,7 +342,7 @@ void find_extremal_graphs(int n, int edge_count, clock_t start_time)
     if (global_mod > 0 && global_res > 0 && n <= SPLITTING_ORDER)
         return;
 
-    make_possible_augmentations(n, edge_count);
+    make_possible_graph_types(n, edge_count);
 
     graph g[MAXN];
     EMPTYGRAPH(g,1,MAXN);
@@ -400,5 +399,5 @@ int main(int argc, char *argv[])
     printf("Nauty calls: %lld\n", nauty_calls);
     printf("Total graph count: %llu\n", global_graph_count);
 
-    clean_up_augmentation_lists();
+    clean_up_graph_type_lists();
 }

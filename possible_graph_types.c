@@ -45,10 +45,11 @@ static bool ok_not_to_try_min_deg(int n, int min_deg, int edge_count)
 }
 
 static bool girth_at_least_6_can_place_enough_edges_to_star(int n, int min_deg, int max_deg,
-        int edge_count, int tree_order)
+        int edge_count)
 {
     // Taking advantage of the fact that if min girth is 6, then
     // there can be no extra edges added among vertices in the big star
+    int tree_order = min_deg*max_deg + 1;
     int tree_edge_count = tree_order-1;
     int extra_edges_required = edge_count - tree_edge_count;
     int num_non_tree_vertices = n - tree_order;
@@ -81,13 +82,8 @@ static bool min_and_max_deg_are_feasible(int n, int min_deg, int max_deg, int ed
     if (max_deg + (min_deg*(n-1)) > edge_count*2)
         return false;
 
-    int tree_order = min_deg*max_deg+1;
-
-    if (tree_order > n)
-        return false;
-
     if (min_girth >= 6 && !girth_at_least_6_can_place_enough_edges_to_star(
-                n, min_deg, max_deg, edge_count, tree_order))
+                n, min_deg, max_deg, edge_count))
         return false;
 
     return true;

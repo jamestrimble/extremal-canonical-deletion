@@ -21,6 +21,8 @@ int global_mod = 0;
 
 unsigned long long global_graph_count = 0;
 
+unsigned long long num_visited_by_order[MAXN] = {};
+
 void delete_neighbourhood(int v, graph *g)
 {
     while (g[v]) {
@@ -188,6 +190,7 @@ void traverse_tree(struct GraphPlus *node,
 
 void visit_graph(struct GraphPlus *gp)
 {
+    num_visited_by_order[gp->n]++;
     if (gp->n==global_n) {
         // output graph
         global_graph_count++;
@@ -267,6 +270,11 @@ int main(int argc, char *argv[])
     nauty_check(WORDSIZE,m,n,NAUTYVERSIONID);
 
     find_extremal_graphs(n, edge_count);
+
+    printf("visited");
+    for (int i=0; i<MAXN; i++)
+        printf(" %llu", num_visited_by_order[i]);
+    printf("\n");
 
     printf("Nauty calls: %lld\n", nauty_calls);
     printf("Total graph count: %llu\n", global_graph_count);

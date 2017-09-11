@@ -10,6 +10,7 @@
 
 #include <limits.h>
 #include <stdbool.h>
+#include <stdatomic.h>
 #include <pthread.h>
 
 #define SPLITTING_ORDER 20
@@ -23,7 +24,9 @@ int global_n;
 
 int global_num_threads = 8;
 
-#define MAX_GRAPHLIST_LEN (1 << 18)
+static _Atomic(unsigned long long) global_graph_count = ATOMIC_VAR_INIT(0ULL);
+
+#define MAX_GRAPHLIST_LEN (1 << 17)
 struct GraphList {
     int count;
     int cursor_position;
@@ -272,6 +275,7 @@ void visit_graph(struct GraphPlus *gp)
 {
     if (gp->n==global_n) {
         // output graph
+        global_graph_count++;
         graph_list_append_thread_safe(&extremal_graphs, gp);
     } else if (gp->n == SPLITTING_ORDER && !gp->in_graph_list) {
         graph_list_append(&splitting_graphs, gp);
@@ -354,16 +358,20 @@ int main(int argc, char *argv[])
 
     find_extremal_graphs(n, edge_count);
 
-    if (extremal_graphs.count == MAX_GRAPHLIST_LEN) {
-        printf("Too many extremal graphs!");
-        exit(1);
+    struct GraphPlus gp;
+    if (global_graph_count < 10) {
+        printf("Showing all graphs:\n");
+        while (graph_list_take(&extremal_graphs, &gp))
+            show_graph(&gp);
+    } else {
+        printf("Showing first 10 graphs:\n");
+        for (int i=0; i<10; i++) {
+            graph_list_take(&extremal_graphs, &gp);
+            show_graph(&gp);
+        }
     }
 
-    struct GraphPlus gp;
-    while (graph_list_take(&extremal_graphs, &gp))
-        show_graph(&gp);
-
-    printf("Total graph count: %d\n", extremal_graphs.count);
+    printf("Total graph count: %llu\n", global_graph_count);
 
     clean_up_graph_type_lists();
 }

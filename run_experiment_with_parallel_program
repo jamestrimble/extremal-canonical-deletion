@@ -1,0 +1,31 @@
+#!/bin/bash
+
+MINGIRTH=$1
+MAXN=$2
+THREADS=$3
+
+mkdir -p program-output
+mkdir -p output-summary
+
+rm -f output-summary/summary.out
+rm -f program-output/*.out
+
+EDGES=0
+MAXEDGEINCR=8
+
+for n in $(seq 2 $MAXN); do
+    echo Running n = $n ...
+    EDGES=$(($EDGES+$MAXEDGEINCR))
+    while true
+    do
+	parallel/ex_max_canonical_deletions $MINGIRTH $n $EDGES $THREADS > program-output/$MINGIRTH-$n-$EDGES.out
+	NUMGRAPHS=$(cat program-output/$MINGIRTH-$n-$EDGES.out | awk '/Total graph count/ {count += $4} END {print count}')
+	if [ "$NUMGRAPHS" -ne "0" ]
+	then
+	    echo $MINGIRTH $n $EDGES $NUMGRAPHS >> output-summary/summary.out
+	    break
+	fi
+	EDGES=$(($EDGES - 1))
+    done
+done
+

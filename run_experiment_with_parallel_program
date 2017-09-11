@@ -7,7 +7,7 @@ THREADS=$3
 mkdir -p program-output
 mkdir -p output-summary
 
-rm -f output-summary/summary.out
+rm -f output-summary/summary*.out
 rm -f program-output/*.out
 
 EDGES=0
@@ -22,7 +22,7 @@ for n in $(seq 2 $MAXN); do
 	NUMGRAPHS=$(cat program-output/$MINGIRTH-$n-$EDGES.out | awk '/Total graph count/ {count += $4} END {print count}')
 	if [ "$NUMGRAPHS" -ne "0" ]
 	then
-	    echo $MINGIRTH $n $EDGES $NUMGRAPHS >> output-summary/summary.out
+	    echo $MINGIRTH $n $EDGES $NUMGRAPHS >> output-summary/summary$MINGIRTH.out
 	    break
 	fi
 	EDGES=$(($EDGES - 1))

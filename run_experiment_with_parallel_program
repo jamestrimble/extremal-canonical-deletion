@@ -7,8 +7,8 @@ THREADS=$3
 mkdir -p program-output
 mkdir -p output-summary
 
-rm -f output-summary/summary*.out
-rm -f program-output/*.out
+rm -f output-summary/summary$MINGIRTH.out
+rm -f program-output/$MINGIRTH-*.out
 
 EDGES=0
 MAXEDGEINCR=8

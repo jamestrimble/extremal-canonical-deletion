@@ -14,26 +14,3 @@ cat num_visited.txt | datamash -W transpose | awk 'NR != 2' | awk '
   NR == 1 { print "n", $0 }
   NR > 1 { print NR-2, $0 }
 '> num_visited_transposed.txt
-
-gnuplot <(echo '
-  set terminal pdf
-  set output "num_visited.pdf"
-  set logscale y
-  set key top left
-  set xrange [0:31]
-  set border 3
-  set tics nomirror
-  set tics scale 0
-  set grid
-  set datafile missing "0"
-  set xlabel "Order of graph"
-  set ylabel "Number of graphs"
-  plot \
-    "num_visited_transposed.txt" using 1:6 with lines title "n*=10", \
-    "num_visited_transposed.txt" using 1:8 with lines title "n*=14", \
-    "num_visited_transposed.txt" using 1:10 with lines title "n*=18", \
-    "num_visited_transposed.txt" using 1:12 with lines title "n*=22", \
-    "num_visited_transposed.txt" using 1:13 with lines title "n*=24", \
-    "num_visited_transposed.txt" using 1:14 with lines title "n*=26", \
-    "num_visited_transposed.txt" using 1:15 with lines title "n*=28"
-')

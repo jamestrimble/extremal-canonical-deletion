@@ -111,52 +111,6 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int *degs) {
     return true;
 }
 
-bool valid_augmenting_type_exists(int n, int *degs, int edge_count)
-{
-    int num_vertices_with_degree[MAXN] = {};
-    for (int i=0; i<n; i++) {
-        ++num_vertices_with_degree[degs[i]];
-    }
-    int sorted_degs[MAXN];
-    int k=0;
-    for (int i=0; i<n; i++) {
-        for (int j=0; j<num_vertices_with_degree[i]; j++) {
-            sorted_degs[k++] = i;
-        }
-    }
-    int smallest_deg = sorted_degs[0];
-    int biggest_deg = sorted_degs[n-1];
-    for (int new_deg=0; new_deg <= smallest_deg; new_deg++) {
-        if (graph_type_is_in_set(&(struct GraphType) {
-                .num_vertices=n + 1,
-                .num_edges=edge_count + new_deg,
-                .min_deg=new_deg,
-                .max_deg=biggest_deg }))
-            return true;
-        if (graph_type_is_in_set(&(struct GraphType) {
-                .num_vertices=n + 1,
-                .num_edges=edge_count + new_deg,
-                .min_deg=new_deg,
-                .max_deg=biggest_deg + 1 }))
-            return true;
-    }
-    if (graph_type_is_in_set(&(struct GraphType) {
-            .num_vertices=n + 1,
-            .num_edges=edge_count + smallest_deg + 1,
-            .min_deg=smallest_deg + 1,
-            .max_deg=biggest_deg }) && (sorted_degs[smallest_deg + 1] >= smallest_deg + 1))
-        return true;
-    if (graph_type_is_in_set(&(struct GraphType) {
-            .num_vertices=n + 1,
-            .num_edges=edge_count + smallest_deg + 1,
-            .min_deg=smallest_deg + 1,
-            .max_deg=biggest_deg + 1 }) && (sorted_degs[smallest_deg] >= smallest_deg + 1))
-        return true;
-
-    return false;
-}
-
-//
 // gp is the graph that we're augmenting
 void output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_incremented,
         struct GraphPlusSet *gp_set)
@@ -179,12 +133,6 @@ void output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_increme
         degs[i] = POPCOUNT(new_g[i]);
         if (degs[i] < degs[n-1])   // The last vertex must have minimum degree
             return;
-    }
-
-    if (n < global_n) {
-        if (!valid_augmenting_type_exists(n, degs, gp->edge_count + degs[n-1])) {
-            return;
-        }
     }
 
     if (deletion_is_canonical(new_g, n, degs[n-1], degs)) {

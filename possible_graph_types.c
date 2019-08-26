@@ -73,6 +73,9 @@ static bool min_and_max_deg_are_feasible(int n, int min_deg, int max_deg, int ed
     if (max_deg == 0)
         return min_deg==0 && edge_count==0;
 
+    if (max_deg >= n)
+        return false;
+
     if (min_deg*max_deg + 1 > n)
         return false;
 
@@ -153,6 +156,11 @@ bool add_graph_type_to_set(struct GraphType *graph_type)
         *graph_type_copy = *graph_type;
         graph_type_copy->next = graph_type_list_heads[hash_val];
         graph_type_list_heads[hash_val] = graph_type_copy;
+//        printf("TYPE %d %d %d %d\n",
+//                graph_type->num_vertices,
+//                graph_type->num_edges,
+//                graph_type->min_deg,
+//                graph_type->max_deg);
         return true;
     } else {
         return false;

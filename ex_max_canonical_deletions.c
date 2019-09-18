@@ -111,6 +111,109 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int *degs) {
     return true;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+//START///////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool tentatively_deletion_is_canonical(graph *g, int n, int min_deg, int *degs) {
+    int n0 = num_neighbours_of_deg_d(g, n-1, min_deg, degs);
+    int nds0 = nb_deg_sum(g, n-1, degs);
+    unsigned long long nnds0 = ULLONG_MAX;  // Only calculate this if we need it
+
+    for (int i=0; i<n-1; i++) {
+        if (degs[i]==min_deg) {
+            int n1 = num_neighbours_of_deg_d(g, i, min_deg, degs);
+            if (n1 > n0) {
+                return false;
+            } else if (n1 == n0) {
+                int nds1 = nb_deg_sum(g, i, degs);
+                if (nds1 > nds0) {
+                    return false;
+                } else if (nds1 == nds0) {
+                    if (nnds0 == ULLONG_MAX)
+                        nnds0 = weighted_nb_nb_deg_sum(g, n-1, degs);
+                    unsigned long long nnds1 = weighted_nb_nb_deg_sum(g, i, degs);
+                    if (nnds1 > nnds0) {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
+bool tentatively_output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_incremented)
+{
+    int n = gp->n + 1;
+
+    graph new_g[MAXN];
+    for (int i=0; i<MAXN; i++)
+        new_g[i] = gp->graph[i];
+
+    while (neighbours) {
+        int nb;
+        TAKEBIT(nb, neighbours);
+        ADDONEEDGE(new_g, n-1, nb, 1);
+    }
+
+    int degs[MAXN];
+    degs[n-1] = POPCOUNT(new_g[n-1]);
+    for (int i=0; i<n-1; i++) {
+        degs[i] = POPCOUNT(new_g[i]);
+        if (degs[i] < degs[n-1])   // The last vertex must have minimum degree
+            return false;
+    }
+
+    return tentatively_deletion_is_canonical(new_g, n, degs[n-1], degs);
+}
+
+bool tentatively_search(struct GraphPlus *gp, setword *have_short_path,
+        setword neighbours, setword candidate_neighbours, bool max_deg_incremented)
+{
+    int neighbours_count = POPCOUNT(neighbours);
+
+    if (graph_type_is_in_set(&(struct GraphType) {
+                .num_vertices=gp->n+1,
+                .num_edges=gp->edge_count+neighbours_count,
+                .min_deg=neighbours_count,
+                .max_deg=gp->max_deg+max_deg_incremented
+            }) && tentatively_output_graph(gp, neighbours, max_deg_incremented))
+        return true;
+
+    if (neighbours_count == gp->min_deg + 1)
+        return false;
+
+    while (candidate_neighbours) {
+        int cand;
+        TAKEBIT(cand, candidate_neighbours);
+        ADDELEMENT(&neighbours, cand);
+        setword new_candidates = candidate_neighbours & ~have_short_path[cand];
+        if (tentatively_search(gp, have_short_path, neighbours, new_candidates,
+                max_deg_incremented || POPCOUNT(gp->graph[cand]) == gp->max_deg))
+            return true;
+        DELELEMENT(&neighbours, cand);
+    }
+    return false;
+}
+
+bool tentatively_visit_graph(struct GraphPlus *gp)
+{
+    if (gp->n==global_n)
+        return true;
+
+    setword have_short_path[MAXN];
+    all_pairs_check_for_short_path(gp->graph, gp->n, MIN_GIRTH-3, have_short_path);
+
+    setword candidate_neighbours = 0;
+    for (int l=0; l<gp->n; l++)
+        ADDELEMENT(&candidate_neighbours, l);
+
+    return tentatively_search(gp, have_short_path, 0, candidate_neighbours, false);
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+//END///////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // gp is the graph that we're augmenting
 void output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_incremented,
         struct GraphPlusSet *gp_set)
@@ -137,10 +240,14 @@ void output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_increme
 
     if (deletion_is_canonical(new_g, n, degs[n-1], degs)) {
         graph new_g_canonical[MAXN];
-        make_canonical(new_g, n, new_g_canonical);
+        struct GraphPlus tentative_gp;
         int edge_count = gp->edge_count + degs[n-1];
         int max_deg = gp->max_deg + max_deg_incremented;
-        gp_set_add(gp_set, new_g_canonical, n, edge_count, degs[n-1], max_deg);
+        make_graph_plus(new_g, n, edge_count, degs[n-1], max_deg, &tentative_gp);
+        if (tentatively_visit_graph(&tentative_gp)) {
+            make_canonical(new_g, n, new_g_canonical);
+            gp_set_add(gp_set, new_g_canonical, n, edge_count, degs[n-1], max_deg);
+        }
     }
 }
 
@@ -209,6 +316,7 @@ void visit_graph(struct GraphPlus *gp)
 
         struct GraphPlusSet gp_set = make_gp_set();
         search(gp, have_short_path, 0, candidate_neighbours, false, &gp_set);
+//        printf("sz %lld\n", gp_set.sz);
         traverse_tree(gp_set.tree_head, visit_graph);
         free_tree(&gp_set.tree_head);
     }

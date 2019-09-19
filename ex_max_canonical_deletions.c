@@ -168,16 +168,13 @@ bool tentatively_output_graph(struct GraphPlus *gp, setword neighbours)
 }
 
 bool tentatively_search(struct GraphPlus *gp, setword *have_short_path,
-        setword neighbours, setword candidate_neighbours, bool max_deg_incremented)
+        setword neighbours, setword candidate_neighbours, bool max_deg_incremented,
+        setword *min_degs)
 {
     int neighbours_count = POPCOUNT(neighbours);
 
-    if (graph_type_is_in_set(&(struct GraphType) {
-                .num_vertices=gp->n+1,
-                .num_edges=gp->edge_count+neighbours_count,
-                .min_deg=neighbours_count,
-                .max_deg=gp->max_deg+max_deg_incremented
-            }) && tentatively_output_graph(gp, neighbours))
+    if (ISELEMENT(&min_degs[max_deg_incremented], neighbours_count) &&
+            tentatively_output_graph(gp, neighbours))
         return true;
 
     if (neighbours_count == gp->min_deg + 1)
@@ -189,7 +186,7 @@ bool tentatively_search(struct GraphPlus *gp, setword *have_short_path,
         ADDELEMENT(&neighbours, cand);
         setword new_candidates = candidate_neighbours & ~have_short_path[cand];
         if (tentatively_search(gp, have_short_path, neighbours, new_candidates,
-                max_deg_incremented || POPCOUNT(gp->graph[cand]) == gp->max_deg))
+                max_deg_incremented || POPCOUNT(gp->graph[cand]) == gp->max_deg, min_degs))
             return true;
         DELELEMENT(&neighbours, cand);
     }
@@ -208,7 +205,16 @@ bool tentatively_visit_graph(struct GraphPlus *gp)
     for (int l=0; l<gp->n; l++)
         ADDELEMENT(&candidate_neighbours, l);
 
-    return tentatively_search(gp, have_short_path, 0, candidate_neighbours, false);
+    setword min_degs[2];
+    for (int i=0; i<2; i++) {
+        struct GraphType * gt = find_graph_type_in_set(&(struct GraphType) {
+                    .num_vertices=gp->n+1,
+                    .num_edges_minus_min_deg=gp->edge_count,
+                    .max_deg=gp->max_deg+i
+                });
+        min_degs[i] = gt ? gt->min_degs : 0;
+    }
+    return tentatively_search(gp, have_short_path, 0, candidate_neighbours, false, min_degs);
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //END///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -257,18 +263,15 @@ void output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_increme
 // neighbours:               neighbours already chosen for the new vertex
 // candidate_neighbours:     other neighbours that might be chosen for the new vertex
 // gp_set:                     a pointer to set of new graphs that is being built
+// min_degs[0]               the set of acceptable min degs if max degree is not incremented
+// min_degs[1]               the set of acceptable min degs if max degree is incremented
 void search(struct GraphPlus *gp, setword *have_short_path,
         setword neighbours, setword candidate_neighbours, bool max_deg_incremented,
-        struct GraphPlusSet *gp_set) 
+        struct GraphPlusSet *gp_set, setword *min_degs) 
 {
     int neighbours_count = POPCOUNT(neighbours);
 
-    if (graph_type_is_in_set(&(struct GraphType) {
-                .num_vertices=gp->n+1,
-                .num_edges=gp->edge_count+neighbours_count,
-                .min_deg=neighbours_count,
-                .max_deg=gp->max_deg+max_deg_incremented
-            }))
+    if (ISELEMENT(&min_degs[max_deg_incremented], neighbours_count))
         output_graph(gp, neighbours, max_deg_incremented, gp_set);
 
     if (neighbours_count == gp->min_deg + 1)
@@ -280,7 +283,7 @@ void search(struct GraphPlus *gp, setword *have_short_path,
         ADDELEMENT(&neighbours, cand);
         setword new_candidates = candidate_neighbours & ~have_short_path[cand];
         search(gp, have_short_path, neighbours, new_candidates,
-                max_deg_incremented || POPCOUNT(gp->graph[cand]) == gp->max_deg, gp_set);
+                max_deg_incremented || POPCOUNT(gp->graph[cand]) == gp->max_deg, gp_set, min_degs);
         DELELEMENT(&neighbours, cand);
     }
 }
@@ -315,7 +318,16 @@ void visit_graph(struct GraphPlus *gp)
             ADDELEMENT(&candidate_neighbours, l);
 
         struct GraphPlusSet gp_set = make_gp_set();
-        search(gp, have_short_path, 0, candidate_neighbours, false, &gp_set);
+        setword min_degs[2];
+        for (int i=0; i<2; i++) {
+            struct GraphType * gt = find_graph_type_in_set(&(struct GraphType) {
+                        .num_vertices=gp->n+1,
+                        .num_edges_minus_min_deg=gp->edge_count,
+                        .max_deg=gp->max_deg+i
+                    });
+            min_degs[i] = gt ? gt->min_degs : 0;
+        }
+        search(gp, have_short_path, 0, candidate_neighbours, false, &gp_set, min_degs);
 //        printf("sz %lld\n", gp_set.sz);
         traverse_tree(gp_set.tree_head, visit_graph);
         free_tree(&gp_set.tree_head);

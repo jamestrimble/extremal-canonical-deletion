@@ -12,8 +12,7 @@ static unsigned int hash_graph_type(struct GraphType *graph_type)
 {
     unsigned int result = 17u;
     result = 31u*result + graph_type->num_vertices;
-    result = 31u*result + graph_type->num_edges;
-    result = 31u*result + graph_type->min_deg;
+    result = 31u*result + graph_type->num_edges_minus_min_deg;
     result = 31u*result + graph_type->max_deg;
     return result % HASH_TABLE_SIZE;
 }
@@ -21,8 +20,7 @@ static unsigned int hash_graph_type(struct GraphType *graph_type)
 static bool graph_types_equal(struct GraphType *graph_type0, struct GraphType *graph_type1)
 {
     return graph_type0->num_vertices == graph_type1->num_vertices &&
-           graph_type0->num_edges == graph_type1->num_edges &&
-           graph_type0->min_deg == graph_type1->min_deg &&
+           graph_type0->num_edges_minus_min_deg == graph_type1->num_edges_minus_min_deg &&
            graph_type0->max_deg == graph_type1->max_deg;
 }
 
@@ -99,12 +97,11 @@ static void make_possible_graph_types_recurse(int n, int edge_count, int min_deg
 
     struct GraphType graph_type = {
                 .num_vertices=n,
-                .num_edges=edge_count,
-                .min_deg=min_deg,
+                .num_edges_minus_min_deg=edge_count-min_deg,
                 .max_deg=max_deg
             };
 
-    if (add_graph_type_to_set(&graph_type)) {
+    if (add_graph_type_to_set(&graph_type, min_deg)) {
         int small_g_ec = edge_count - min_deg;
         if (small_g_ec >= 0) {
             // i is min deg in the graph with one vertex fewer
@@ -135,25 +132,28 @@ void make_possible_graph_types(int n, int edge_count, int min_girth)
     }
 }
 
-bool graph_type_is_in_set(struct GraphType *graph_type)
+struct GraphType * find_graph_type_in_set(struct GraphType *graph_type)
 {
     struct GraphType *head = graph_type_list_heads[hash_graph_type(graph_type)];
     while (head) {
         if (graph_types_equal(head, graph_type)) {
-            return true;
+            return head;
         }
         head = head->next;
     }
-    return false;
+    return NULL;
 }
 
 // Returns true if the graph_type was added, and false if it was already present
-bool add_graph_type_to_set(struct GraphType *graph_type)
+bool add_graph_type_to_set(struct GraphType *graph_type, int min_deg)
 {
-    if (!graph_type_is_in_set(graph_type)) {
+    struct GraphType *gt = find_graph_type_in_set(graph_type);
+    if (!gt) {
         unsigned int hash_val = hash_graph_type(graph_type);
         struct GraphType *graph_type_copy = emalloc(sizeof(*graph_type_copy));
         *graph_type_copy = *graph_type;
+        graph_type_copy->min_degs = 0;
+        ADDELEMENT(&graph_type_copy->min_degs, min_deg);
         graph_type_copy->next = graph_type_list_heads[hash_val];
         graph_type_list_heads[hash_val] = graph_type_copy;
 //        printf("TYPE %d %d %d %d\n",
@@ -163,7 +163,12 @@ bool add_graph_type_to_set(struct GraphType *graph_type)
 //                graph_type->max_deg);
         return true;
     } else {
-        return false;
+        if (!ISELEMENT(&gt->min_degs, min_deg)) {
+            ADDELEMENT(&gt->min_degs, min_deg);
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 

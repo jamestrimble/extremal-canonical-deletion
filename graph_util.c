@@ -45,18 +45,15 @@ void all_pairs_check_for_short_path(graph *g, int n, int max_path_len, setword *
     }
 
     for (int k=2; k<=max_path_len; k++) {
-        graph tmp[MAXN];
-        for (int l=0; l<n; l++) {
-            tmp[l] = have_short_path[l];
-        }
-        for (int i=0; i<n; i++) {
+        for (int i=1; i<n; i++) {
+            graph tmp = have_short_path[i];
             for (int j=0; j<i; j++) {
                 //  The next few lines do the same as the following, without an 'if'
-                //  if (tmp[i] & g[j]) {
+                //  if (tmp & g[j]) {
                 //      ADDELEMENT(&have_short_path[i], j);
                 //      ADDELEMENT(&have_short_path[j], i);
                 //  }
-                bool have_path = ((tmp[i] & g[j]) != 0ull);
+                bool have_path = ((tmp & g[j]) != 0ull);
                 have_short_path[i] |= have_path * ((1ull<<63)>>j);
                 have_short_path[j] |= have_path * ((1ull<<63)>>i);
             }

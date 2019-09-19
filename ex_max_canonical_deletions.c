@@ -142,7 +142,7 @@ bool tentatively_deletion_is_canonical(graph *g, int n, int min_deg, int *degs) 
     return true;
 }
 
-bool tentatively_output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_incremented)
+bool tentatively_output_graph(struct GraphPlus *gp, setword neighbours)
 {
     int n = gp->n + 1;
 
@@ -177,7 +177,7 @@ bool tentatively_search(struct GraphPlus *gp, setword *have_short_path,
                 .num_edges=gp->edge_count+neighbours_count,
                 .min_deg=neighbours_count,
                 .max_deg=gp->max_deg+max_deg_incremented
-            }) && tentatively_output_graph(gp, neighbours, max_deg_incremented))
+            }) && tentatively_output_graph(gp, neighbours))
         return true;
 
     if (neighbours_count == gp->min_deg + 1)

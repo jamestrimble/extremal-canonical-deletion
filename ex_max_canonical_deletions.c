@@ -40,7 +40,7 @@ void make_canonical(graph *g, int n, graph *canon_g)
     nauty_calls++;
 }
 
-bool deletion_is_better(int v, graph *g, int n)
+bool deletion_is_better(int v, graph *g, int n, int min_deg, int max_deg)
 {
     graph g0[MAXN], g1[MAXN];
     for (int i=0; i<n; i++) {
@@ -61,6 +61,23 @@ bool deletion_is_better(int v, graph *g, int n)
         }
     }
 
+    for (int deg=min_deg; deg<=max_deg; deg++) {
+        setword sw0 = 0;
+        setword sw1 = 0;
+        for (int i=0; i<n; i++) {
+            if (POPCOUNT(g0[i]) == deg)
+                sw0 ^= g0[i];
+            if (POPCOUNT(g1[i]) == deg)
+                sw1 ^= g1[i];
+        }
+        int pc0 = POPCOUNT(sw0);
+        int pc1 = POPCOUNT(sw1);
+        if (pc0 < pc1)
+            return true;
+        if (pc0 > pc1)
+            return false;
+    }
+
     graph g1_canon[MAXN];
     make_canonical(g1, n-1, g1_canon);
 
@@ -72,7 +89,7 @@ bool deletion_is_better(int v, graph *g, int n)
 // For correctness, we have to be really careful about what rules we
 // put in here.
 // Assumption: the last vertex of g has degree equal to min_deg
-bool deletion_is_canonical(graph *g, int n, int min_deg, int *degs) {
+bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs) {
     int n0 = num_neighbours_of_deg_d(g, n-1, min_deg, degs);
     int nds0 = nb_deg_sum(g, n-1, degs);
     unsigned long long nnds0 = ULLONG_MAX;  // Only calculate this if we need it
@@ -105,7 +122,7 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int *degs) {
         }
     }
     for (int i=0; i<vertices_to_check_deletion_len; i++)
-        if (nnds0 && deletion_is_better(vertices_to_check_deletion[i], g, n))
+        if (nnds0 && deletion_is_better(vertices_to_check_deletion[i], g, n, min_deg, max_deg))
             return false;
 
     return true;
@@ -244,11 +261,11 @@ void output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_increme
             return;
     }
 
-    if (deletion_is_canonical(new_g, n, degs[n-1], degs)) {
+    int max_deg = gp->max_deg + max_deg_incremented;
+    if (deletion_is_canonical(new_g, n, degs[n-1], max_deg, degs)) {
         graph new_g_canonical[MAXN];
         struct GraphPlus tentative_gp;
         int edge_count = gp->edge_count + degs[n-1];
-        int max_deg = gp->max_deg + max_deg_incremented;
         make_graph_plus(new_g, n, edge_count, degs[n-1], max_deg, &tentative_gp);
         if (tentatively_visit_graph(&tentative_gp)) {
             make_canonical(new_g, n, new_g_canonical);

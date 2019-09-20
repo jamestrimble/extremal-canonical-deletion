@@ -61,17 +61,29 @@ bool deletion_is_better(int v, graph *g, int n, int min_deg, int max_deg)
         }
     }
 
+    setword sw0a = 0;
+    setword sw1a = 0;
     for (int deg=min_deg; deg<=max_deg; deg++) {
         setword sw0 = 0;
         setword sw1 = 0;
         for (int i=0; i<n; i++) {
-            if (POPCOUNT(g0[i]) == deg)
+            if (POPCOUNT(g0[i]) == deg) {
                 sw0 ^= g0[i];
-            if (POPCOUNT(g1[i]) == deg)
+                sw0a ^= g0[i];
+            }
+            if (POPCOUNT(g1[i]) == deg) {
                 sw1 ^= g1[i];
+                sw1a ^= g1[i];
+            }
         }
         int pc0 = POPCOUNT(sw0);
         int pc1 = POPCOUNT(sw1);
+        if (pc0 < pc1)
+            return true;
+        if (pc0 > pc1)
+            return false;
+        pc0 = POPCOUNT(sw0a);
+        pc1 = POPCOUNT(sw1a);
         if (pc0 < pc1)
             return true;
         if (pc0 > pc1)

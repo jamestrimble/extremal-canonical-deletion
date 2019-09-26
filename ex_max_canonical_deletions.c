@@ -212,12 +212,11 @@ bool tentatively_search(struct GraphPlus *gp, setword *have_short_path,
     while (candidate_neighbours) {
         int cand;
         TAKEBIT(cand, candidate_neighbours);
-        ADDELEMENT(&neighbours, cand);
+        setword new_neighbours = neighbours | bit[cand];
         setword new_candidates = candidate_neighbours & ~have_short_path[cand];
-        if (tentatively_search(gp, have_short_path, neighbours, new_candidates,
+        if (tentatively_search(gp, have_short_path, new_neighbours, new_candidates,
                 max_deg_incremented || POPCOUNT(gp->graph[cand]) == gp->max_deg, min_degs))
             return true;
-        DELELEMENT(&neighbours, cand);
     }
     return false;
 }

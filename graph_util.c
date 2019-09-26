@@ -53,9 +53,9 @@ void all_pairs_check_for_short_path(graph *g, int n, int max_path_len, setword *
                 //      ADDELEMENT(&have_short_path_i, j);
                 //      ADDELEMENT(&have_short_path[j], i);
                 //  }
-                bool have_path = ((tmp & g[j]) != 0ull);
-                have_short_path_i |= have_path * bit[j];
-                have_short_path[j] |= have_path * bit[i];
+                setword have_path = ((tmp & g[j]) != 0ull) ? ~0ull : 0ull;
+                have_short_path_i |= have_path & bit[j];
+                have_short_path[j] |= have_path & bit[i];
             }
             have_short_path[i] = have_short_path_i;
         }

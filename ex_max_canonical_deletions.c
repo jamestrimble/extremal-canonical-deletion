@@ -159,9 +159,6 @@ bool tentatively_visit_graph(struct GraphPlus *gp)
     if (gp->n==global_n)
         return true;
 
-    setword have_short_path[MAXN];
-    all_pairs_check_for_short_path(gp->graph, gp->n, MIN_GIRTH-3, have_short_path);
-
     setword min_degs[2];
     for (int i=0; i<2; i++) {
         struct GraphType * gt = find_graph_type_in_set(&(struct GraphType) {
@@ -190,6 +187,12 @@ bool tentatively_visit_graph(struct GraphPlus *gp)
             ADDELEMENT(&forced_neighbours, l);
         ADDELEMENT(&candidate_neighbours, l);
     }
+
+    if (POPCOUNT(forced_neighbours) > gp->min_deg + 1)
+        return false;
+
+    setword have_short_path[MAXN];
+    all_pairs_check_for_short_path(gp->graph, gp->n, MIN_GIRTH-3, have_short_path);
 
     struct SearchData sd = {gp, have_short_path, NULL, {min_degs[0], min_degs[1]}, true, forced_neighbours};
     return search(&sd, 0, candidate_neighbours, false);
@@ -293,9 +296,6 @@ void visit_graph(struct GraphPlus *gp)
         if (gp->n == SPLITTING_ORDER && global_mod!=0 && gp->hash%global_mod != global_res)
             return;
 
-        setword have_short_path[MAXN];
-        all_pairs_check_for_short_path(gp->graph, gp->n, MIN_GIRTH-3, have_short_path);
-
         struct GraphPlusSet gp_set = make_gp_set();
         setword min_degs[2];
         for (int i=0; i<2; i++) {
@@ -325,6 +325,9 @@ void visit_graph(struct GraphPlus *gp)
                 ADDELEMENT(&forced_neighbours, l);
             ADDELEMENT(&candidate_neighbours, l);
         }
+
+        setword have_short_path[MAXN];
+        all_pairs_check_for_short_path(gp->graph, gp->n, MIN_GIRTH-3, have_short_path);
 
         struct SearchData sd = {gp, have_short_path, &gp_set, {min_degs[0], min_degs[1]}, false, forced_neighbours};
         search(&sd, 0, candidate_neighbours, false);

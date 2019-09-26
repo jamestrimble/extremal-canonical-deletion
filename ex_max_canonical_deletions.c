@@ -246,7 +246,7 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
 bool search(struct SearchData *sd,
         setword neighbours, setword candidate_neighbours, bool max_deg_incremented)
 {
-    if (sd->forced_neighbours != ((neighbours | candidate_neighbours) & sd->forced_neighbours))
+    if (0 != (sd->forced_neighbours & ~(neighbours | candidate_neighbours)))
         return false;
 
     int neighbours_count = POPCOUNT(neighbours);

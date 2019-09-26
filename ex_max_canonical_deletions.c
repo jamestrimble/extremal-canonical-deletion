@@ -236,18 +236,17 @@ bool search(struct SearchData *sd,
             sd->tentative_version)
         return true;
 
-    if (neighbours_count == sd->gp->min_deg + 1)
-        return false;
-
-    while (candidate_neighbours) {
-        int cand;
-        TAKEBIT(cand, candidate_neighbours);
-        setword new_neighbours = neighbours | bit[cand];
-        setword new_candidates = candidate_neighbours & ~sd->have_short_path[cand];
-        if (search(sd, new_neighbours, new_candidates,
-                max_deg_incremented || POPCOUNT(sd->gp->graph[cand]) == sd->gp->max_deg) &&
-                sd->tentative_version)
-            return true;
+    if (neighbours_count < sd->gp->min_deg + 1) {
+        while (candidate_neighbours) {
+            int cand;
+            TAKEBIT(cand, candidate_neighbours);
+            setword new_neighbours = neighbours | bit[cand];
+            setword new_candidates = candidate_neighbours & ~sd->have_short_path[cand];
+            if (search(sd, new_neighbours, new_candidates,
+                    max_deg_incremented || POPCOUNT(sd->gp->graph[cand]) == sd->gp->max_deg) &&
+                    sd->tentative_version)
+                return true;
+        }
     }
     return false;
 }

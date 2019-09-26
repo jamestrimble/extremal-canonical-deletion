@@ -308,11 +308,10 @@ void search(struct GraphPlus *gp, setword *have_short_path,
     while (candidate_neighbours) {
         int cand;
         TAKEBIT(cand, candidate_neighbours);
-        ADDELEMENT(&neighbours, cand);
+        setword new_neighbours = neighbours | bit[cand];
         setword new_candidates = candidate_neighbours & ~have_short_path[cand];
-        search(gp, have_short_path, neighbours, new_candidates,
+        search(gp, have_short_path, new_neighbours, new_candidates,
                 max_deg_incremented || POPCOUNT(gp->graph[cand]) == gp->max_deg, gp_set, min_degs);
-        DELELEMENT(&neighbours, cand);
     }
 }
 

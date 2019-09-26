@@ -41,7 +41,6 @@ void all_pairs_check_for_short_path(graph *g, int n, int max_path_len, setword *
 {
     for (int i=0; i<n; i++) {
         have_short_path[i] = g[i] | bit[i];
-        ADDELEMENT(&have_short_path[i], i);
     }
 
     for (int k=2; k<=max_path_len; k++) {

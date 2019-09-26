@@ -274,11 +274,11 @@ void output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_increme
 
     int max_deg = gp->max_deg + max_deg_incremented;
     if (deletion_is_canonical(new_g, n, degs[n-1], max_deg, degs)) {
-        graph new_g_canonical[MAXN];
         struct GraphPlus tentative_gp;
         int edge_count = gp->edge_count + degs[n-1];
         make_graph_plus(new_g, n, edge_count, degs[n-1], max_deg, &tentative_gp);
         if (tentatively_visit_graph(&tentative_gp)) {
+            graph new_g_canonical[MAXN];
             make_canonical(new_g, n, new_g_canonical);
             gp_set_add(gp_set, new_g_canonical, n, edge_count, degs[n-1], max_deg);
         }

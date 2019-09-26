@@ -20,7 +20,7 @@ unsigned long long weighted_nb_nb_deg_sum(graph *g, int v, int *degs) {
     while (nb) {
         int w;
         TAKEBIT(w, nb);
-        retval += (unsigned long long) degs[w] * nb_deg_sum(g, w, degs);
+        retval += (unsigned long long) degs[w] << (nb_deg_sum(g, w, degs) & 31);
     }
     return retval;
 }

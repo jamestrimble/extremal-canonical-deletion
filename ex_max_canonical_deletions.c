@@ -135,7 +135,7 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs,
         }
     }
     for (int i=0; i<vertices_to_check_deletion_len; i++)
-        if (nnds0 && deletion_is_better(vertices_to_check_deletion[i], g, n, min_deg, max_deg))
+        if (deletion_is_better(vertices_to_check_deletion[i], g, n, min_deg, max_deg))
             return false;
 
     return true;

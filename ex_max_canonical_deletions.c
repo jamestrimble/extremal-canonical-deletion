@@ -141,9 +141,17 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs,
     return true;
 }
 
-bool search(struct GraphPlus *gp, setword *have_short_path,
-        setword neighbours, setword candidate_neighbours, bool max_deg_incremented,
-        struct GraphPlusSet *gp_set, setword *min_degs, bool tentative_version);
+struct SearchData
+{
+    struct GraphPlus *gp;
+    setword *have_short_path;
+    struct GraphPlusSet *gp_set;
+    setword min_degs[2];
+    bool tentative_version;
+};
+
+bool search(struct SearchData *sd,
+        setword neighbours, setword candidate_neighbours, bool max_deg_incremented);
 
 bool tentatively_visit_graph(struct GraphPlus *gp)
 {
@@ -166,19 +174,18 @@ bool tentatively_visit_graph(struct GraphPlus *gp)
                 });
         min_degs[i] = gt ? gt->min_degs : 0;
     }
-    return search(gp, have_short_path, 0, candidate_neighbours, false, NULL,
-            min_degs, true);
+    struct SearchData sd = {gp, have_short_path, NULL, {min_degs[0], min_degs[1]}, true};
+    return search(&sd, 0, candidate_neighbours, false);
 }
 
-// gp is the graph that we're augmenting
-bool output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_incremented,
-        struct GraphPlusSet *gp_set, bool tentative_version)
+// sd->gp is the graph that we're augmenting
+bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_incremented)
 {
-    int n = gp->n + 1;
+    int n = sd->gp->n + 1;
 
     graph new_g[MAXN];
     for (int i=0; i<MAXN; i++)
-        new_g[i] = gp->graph[i];
+        new_g[i] = sd->gp->graph[i];
 
     while (neighbours) {
         int nb;
@@ -194,17 +201,17 @@ bool output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_increme
             return false;
     }
 
-    int max_deg = gp->max_deg + max_deg_incremented;
-    if (tentative_version) {
+    int max_deg = sd->gp->max_deg + max_deg_incremented;
+    if (sd->tentative_version) {
         return deletion_is_canonical(new_g, n, degs[n-1], max_deg, degs, true);
     } else if (deletion_is_canonical(new_g, n, degs[n-1], max_deg, degs, false)) {
         struct GraphPlus tentative_gp;
-        int edge_count = gp->edge_count + degs[n-1];
+        int edge_count = sd->gp->edge_count + degs[n-1];
         make_graph_plus(new_g, n, edge_count, degs[n-1], max_deg, &tentative_gp);
         if (tentatively_visit_graph(&tentative_gp)) {
             graph new_g_canonical[MAXN];
             make_canonical(new_g, n, new_g_canonical);
-            gp_set_add(gp_set, new_g_canonical, n, edge_count, degs[n-1], max_deg);
+            gp_set_add(sd->gp_set, new_g_canonical, n, edge_count, degs[n-1], max_deg);
             return true;
         }
     }
@@ -212,36 +219,34 @@ bool output_graph(struct GraphPlus *gp, setword neighbours, bool max_deg_increme
 }
 
 // Arguments:
-// gp:                       the graph we're trying to extend
-// have_short_path:          is there a path of length <= MIN_GIRTH-3 from i to j?
+// sd->gp:                       the graph we're trying to extend
+// sd->have_short_path:          is there a path of length <= MIN_GIRTH-3 from i to j?
 // neighbours:               neighbours already chosen for the new vertex
 // candidate_neighbours:     other neighbours that might be chosen for the new vertex
-// gp_set:                     a pointer to set of new graphs that is being built
-// min_degs[0]               the set of acceptable min degs if max degree is not incremented
-// min_degs[1]               the set of acceptable min degs if max degree is incremented
-bool search(struct GraphPlus *gp, setword *have_short_path,
-        setword neighbours, setword candidate_neighbours, bool max_deg_incremented,
-        struct GraphPlusSet *gp_set, setword *min_degs, bool tentative_version) 
+// sd->gp_set:                     a pointer to set of new graphs that is being built
+// sd->min_degs[0]               the set of acceptable min degs if max degree is not incremented
+// sd->min_degs[1]               the set of acceptable min degs if max degree is incremented
+bool search(struct SearchData *sd,
+        setword neighbours, setword candidate_neighbours, bool max_deg_incremented)
 {
     int neighbours_count = POPCOUNT(neighbours);
 
-    if (ISELEMENT(&min_degs[max_deg_incremented], neighbours_count) &&
-            output_graph(gp, neighbours, max_deg_incremented, gp_set, tentative_version) &&
-            tentative_version)
+    if (ISELEMENT(&sd->min_degs[max_deg_incremented], neighbours_count) &&
+            output_graph(sd, neighbours, max_deg_incremented) &&
+            sd->tentative_version)
         return true;
 
-    if (neighbours_count == gp->min_deg + 1)
+    if (neighbours_count == sd->gp->min_deg + 1)
         return false;
 
     while (candidate_neighbours) {
         int cand;
         TAKEBIT(cand, candidate_neighbours);
         setword new_neighbours = neighbours | bit[cand];
-        setword new_candidates = candidate_neighbours & ~have_short_path[cand];
-        if (search(gp, have_short_path, new_neighbours, new_candidates,
-                max_deg_incremented || POPCOUNT(gp->graph[cand]) == gp->max_deg, gp_set, min_degs,
-                tentative_version) &&
-                tentative_version)
+        setword new_candidates = candidate_neighbours & ~sd->have_short_path[cand];
+        if (search(sd, new_neighbours, new_candidates,
+                max_deg_incremented || POPCOUNT(sd->gp->graph[cand]) == sd->gp->max_deg) &&
+                sd->tentative_version)
             return true;
     }
     return false;
@@ -286,7 +291,8 @@ void visit_graph(struct GraphPlus *gp)
                     });
             min_degs[i] = gt ? gt->min_degs : 0;
         }
-        search(gp, have_short_path, 0, candidate_neighbours, false, &gp_set, min_degs, false);
+        struct SearchData sd = {gp, have_short_path, &gp_set, {min_degs[0], min_degs[1]}, false};
+        search(&sd, 0, candidate_neighbours, false);
 //        printf("sz %lld\n", gp_set.sz);
         traverse_tree(gp_set.tree_head, visit_graph);
         free_tree(&gp_set.tree_head);

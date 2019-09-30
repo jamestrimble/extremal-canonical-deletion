@@ -149,6 +149,7 @@ struct SearchData
     setword min_degs[2];
     bool tentative_version;
     setword forced_neighbours;
+    setword vertices_of_min_deg;
 };
 
 bool search(struct SearchData *sd,
@@ -170,7 +171,7 @@ bool tentatively_visit_graph(struct GraphPlus *gp)
     }
 
     setword candidate_neighbours = 0;
-    setword forced_neighbours = 0;
+    setword vertices_of_min_deg = 0;
     setword combined_min_degs = min_degs[0] | min_degs[1];
     int must_increment_min_deg = true;
     for (int i=0; i<=gp->min_deg; i++) {
@@ -183,10 +184,11 @@ bool tentatively_visit_graph(struct GraphPlus *gp)
         int pc = POPCOUNT(gp->graph[l]);
         if (pc==gp->max_deg && min_degs[1] == 0)
             continue;
-        if (pc == gp->min_deg && must_increment_min_deg)
-            ADDELEMENT(&forced_neighbours, l);
+        if (pc == gp->min_deg)
+            ADDELEMENT(&vertices_of_min_deg, l);
         ADDELEMENT(&candidate_neighbours, l);
     }
+    setword forced_neighbours = must_increment_min_deg ? vertices_of_min_deg : 0;
 
     if (POPCOUNT(forced_neighbours) > gp->min_deg + 1)
         return false;
@@ -194,7 +196,8 @@ bool tentatively_visit_graph(struct GraphPlus *gp)
     setword have_short_path[MAXN];
     all_pairs_check_for_short_path(gp->graph, gp->n, MIN_GIRTH-3, have_short_path);
 
-    struct SearchData sd = {gp, have_short_path, NULL, {min_degs[0], min_degs[1]}, true, forced_neighbours};
+    struct SearchData sd = {gp, have_short_path, NULL, {min_degs[0], min_degs[1]}, true, forced_neighbours,
+            vertices_of_min_deg};
     return search(&sd, 0, candidate_neighbours, false);
 }
 
@@ -214,12 +217,8 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
     }
 
     int degs[MAXN];
-    degs[n-1] = POPCOUNT(new_g[n-1]);
-    for (int i=0; i<n-1; i++) {
+    for (int i=0; i<n; i++)
         degs[i] = POPCOUNT(new_g[i]);
-        if (degs[i] < degs[n-1])   // The last vertex must have minimum degree
-            return false;
-    }
 
     int max_deg = sd->gp->max_deg + max_deg_incremented;
     if (sd->tentative_version) {
@@ -246,8 +245,10 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
 // sd->gp_set:                     a pointer to set of new graphs that is being built
 // sd->min_degs[0]               the set of acceptable min degs if max degree is not incremented
 // sd->min_degs[1]               the set of acceptable min degs if max degree is incremented
-bool search(struct SearchData *sd,
-        setword neighbours, setword candidate_neighbours, bool max_deg_incremented)
+// max_deg_incremented           does the new graph have a higher max deg than the parent graph?
+// sd->vertices_of_min_deg           which vertices in sd->gp have minimum degree?
+bool search(struct SearchData *sd, setword neighbours, setword candidate_neighbours,
+        bool max_deg_incremented)
 {
     if (0 != (sd->forced_neighbours & ~(neighbours | candidate_neighbours)))
         return false;
@@ -255,6 +256,8 @@ bool search(struct SearchData *sd,
     int neighbours_count = POPCOUNT(neighbours);
 
     if (ISELEMENT(&sd->min_degs[max_deg_incremented], neighbours_count) &&
+            // the next line ensures that the new vertex has min degree
+            (neighbours_count <= sd->gp->min_deg || (neighbours & sd->vertices_of_min_deg) == sd->vertices_of_min_deg) &&
             output_graph(sd, neighbours, max_deg_incremented) &&
             sd->tentative_version)
         return true;
@@ -308,7 +311,7 @@ void visit_graph(struct GraphPlus *gp)
         }
 
         setword candidate_neighbours = 0;
-        setword forced_neighbours = 0;
+        setword vertices_of_min_deg = 0;
         setword combined_min_degs = min_degs[0] | min_degs[1];
         int must_increment_min_deg = true;
         for (int i=0; i<=gp->min_deg; i++) {
@@ -321,15 +324,17 @@ void visit_graph(struct GraphPlus *gp)
             int pc = POPCOUNT(gp->graph[l]);
             if (pc==gp->max_deg && min_degs[1] == 0)
                 continue;
-            if (pc == gp->min_deg && must_increment_min_deg)
-                ADDELEMENT(&forced_neighbours, l);
+            if (pc == gp->min_deg)
+                ADDELEMENT(&vertices_of_min_deg, l);
             ADDELEMENT(&candidate_neighbours, l);
         }
+        setword forced_neighbours = must_increment_min_deg ? vertices_of_min_deg : 0;
 
         setword have_short_path[MAXN];
         all_pairs_check_for_short_path(gp->graph, gp->n, MIN_GIRTH-3, have_short_path);
 
-        struct SearchData sd = {gp, have_short_path, &gp_set, {min_degs[0], min_degs[1]}, false, forced_neighbours};
+        struct SearchData sd = {gp, have_short_path, &gp_set, {min_degs[0], min_degs[1]}, false, forced_neighbours,
+                vertices_of_min_deg};
         search(&sd, 0, candidate_neighbours, false);
 //        printf("sz %lld\n", gp_set.sz);
         traverse_tree(gp_set.tree_head, visit_graph);

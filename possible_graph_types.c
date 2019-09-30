@@ -10,7 +10,7 @@ static const int MAX_RECORDED_EXTREMAL_6 = 40;
 static const int EXTREMAL_6[] = {0,0,1,2,3,4,6,7,9,10,12,14,16,18,21,22,24,26,29,31,
         34,36,39,42,45,48,52,53,56,58,61,64,67,70,74,77,81,84,88,92,96};
 static const int MAX_RECORDED_EXTREMAL_5 = 32;
-static const int EXTREMAL_5[] = {0,1,2,3,5,6,8,10,12,15,16,18,21,23,26,28,31,34,38,
+static const int EXTREMAL_5[] = {0,0,1,2,3,5,6,8,10,12,15,16,18,21,23,26,28,31,34,38,
         41,44,47,50,54,57,61,65,68,72,76,80,85};
 struct GraphType *graph_type_list_heads[HASH_TABLE_SIZE] = {};
 

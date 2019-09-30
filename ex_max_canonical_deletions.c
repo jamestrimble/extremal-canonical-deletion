@@ -262,7 +262,7 @@ bool search(struct SearchData *sd, setword neighbours, setword candidate_neighbo
             sd->tentative_version)
         return true;
 
-    if (neighbours_count < sd->gp->min_deg + 1) {
+    if (neighbours_count <= sd->gp->min_deg) {
         while (candidate_neighbours) {
             int cand;
             TAKEBIT(cand, candidate_neighbours);

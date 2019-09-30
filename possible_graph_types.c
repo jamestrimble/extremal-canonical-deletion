@@ -6,6 +6,10 @@
 
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
 
+static const int MAX_RECORDED_EXTREMAL_6 = 40;
+static const int EXTREMAL_6[] = {0,0,1,2,3,4,6,7,9,10,12,14,16,18,21,22,24,26,29,31,
+        34,36,39,42,45,48,52,53,56,58,61,64,67,70,74,77,81,84,88,92,96};
+
 struct GraphType *graph_type_list_heads[HASH_TABLE_SIZE] = {};
 
 static unsigned int hash_graph_type(struct GraphType *graph_type)
@@ -85,6 +89,9 @@ static bool min_and_max_deg_are_feasible(int n, int min_deg, int max_deg, int ed
 
     if (min_girth >= 6 && !girth_at_least_6_can_place_enough_edges_to_star(
                 n, min_deg, max_deg, edge_count))
+        return false;
+
+    if (min_girth == 6 && n <= MAX_RECORDED_EXTREMAL_6 && edge_count > EXTREMAL_6[n])
         return false;
 
     return true;

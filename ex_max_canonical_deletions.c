@@ -157,7 +157,7 @@ bool search(struct SearchData *sd,
 
 bool tentatively_visit_graph(struct GraphPlus *gp)
 {
-    if (gp->n==global_n)
+    if (gp->n >= global_n - 1)
         return true;
 
     setword min_degs[2];
@@ -220,17 +220,38 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
     for (int i=0; i<n; i++)
         degs[i] = POPCOUNT(new_g[i]);
 
+    int min_deg = degs[n-1];
     int max_deg = sd->gp->max_deg + max_deg_incremented;
     if (sd->tentative_version) {
-        return deletion_is_canonical(new_g, n, degs[n-1], max_deg, degs, true);
-    } else if (deletion_is_canonical(new_g, n, degs[n-1], max_deg, degs, false)) {
+        if (deletion_is_canonical(new_g, n, min_deg, max_deg, degs, true)) {
+            int num_of_min_deg = 0;
+            for (int i=0; i<n; i++)
+                if (degs[i] == min_deg)
+                    ++num_of_min_deg;
+            setword min_degs = 0;
+            for (int increment_max_deg_again=0; increment_max_deg_again<2; increment_max_deg_again++) {
+                struct GraphType * gt = find_graph_type_in_set(&(struct GraphType) {
+                            .num_vertices=n + 1,
+                            .num_edges_minus_min_deg=sd->gp->edge_count + min_deg,
+                            .max_deg=max_deg + increment_max_deg_again
+                        });
+                if (gt)
+                    min_degs |= gt->min_degs;
+            }
+            int top = num_of_min_deg > min_deg + 1 ? min_deg : min_deg + 1;
+            for (int i=0; i<=top; i++)
+                if (ISELEMENT(&min_degs, i))
+                    return true;
+        }
+        return false;
+    } else if (deletion_is_canonical(new_g, n, min_deg, max_deg, degs, false)) {
         struct GraphPlus tentative_gp;
-        int edge_count = sd->gp->edge_count + degs[n-1];
-        make_graph_plus(new_g, n, edge_count, degs[n-1], max_deg, &tentative_gp);
+        int edge_count = sd->gp->edge_count + min_deg;
+        make_graph_plus(new_g, n, edge_count, min_deg, max_deg, &tentative_gp);
         if (tentatively_visit_graph(&tentative_gp)) {
             graph new_g_canonical[MAXN];
             make_canonical(new_g, n, new_g_canonical);
-            gp_set_add(sd->gp_set, new_g_canonical, n, edge_count, degs[n-1], max_deg);
+            gp_set_add(sd->gp_set, new_g_canonical, n, edge_count, min_deg, max_deg);
             return true;
         }
     }

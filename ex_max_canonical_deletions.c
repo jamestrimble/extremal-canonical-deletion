@@ -148,7 +148,6 @@ struct SearchData
     struct GraphPlusSet *gp_set;
     setword min_degs[2];
     bool tentative_version;
-    setword forced_neighbours;
     setword vertices_of_min_deg;
 };
 
@@ -231,9 +230,6 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
 bool search(struct SearchData *sd, setword neighbours, setword candidate_neighbours,
         bool max_deg_incremented)
 {
-    if (0 != (sd->forced_neighbours & ~(neighbours | candidate_neighbours)))
-        return false;
-
     int neighbours_count = POPCOUNT(neighbours);
 
     if (ISELEMENT(&sd->min_degs[max_deg_incremented], neighbours_count) &&
@@ -331,9 +327,23 @@ bool visit_graph(struct GraphPlus *gp, bool tentative_version)
     setword have_short_path[MAXN];
     all_pairs_check_for_short_path(gp->graph, gp->n, MIN_GIRTH-3, have_short_path);
 
+    setword forced_neighbours_copy = forced_neighbours;
+    setword neighbours = 0;
+    bool max_deg_incremented = false;
+    while (forced_neighbours_copy) {
+        int cand;
+        TAKEBIT(cand, forced_neighbours_copy);
+        ADDELEMENT(&neighbours, cand);
+        candidate_neighbours &= ~have_short_path[cand];
+        if (0 != (forced_neighbours & ~(neighbours | candidate_neighbours)))
+            return false;
+        if (gp->min_deg == gp->max_deg)
+            max_deg_incremented = true;
+    }
+
     struct SearchData sd = {gp, have_short_path, gp_set_ptr, {min_degs[0], min_degs[1]},
-            tentative_version, forced_neighbours, vertices_of_min_deg};
-    bool search_result = search(&sd, 0, candidate_neighbours, false);
+            tentative_version, vertices_of_min_deg};
+    bool search_result = search(&sd, neighbours, candidate_neighbours, max_deg_incremented);
     if (tentative_version) {
         return search_result;
     } else {

@@ -154,7 +154,7 @@ struct SearchData
 bool search(struct SearchData *sd,
         setword neighbours, setword candidate_neighbours, bool max_deg_incremented);
 
-bool visit_graph(struct GraphPlus *gp, bool tentative_version);
+bool visit_graph(struct GraphPlus *gp, bool tentative_version, graph *parent_have_short_path);
 
 // sd->gp is the graph that we're augmenting
 bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_incremented)
@@ -228,7 +228,7 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
         struct GraphPlus tentative_gp;
         int edge_count = sd->gp->edge_count + min_deg;
         make_graph_plus(new_g, n, edge_count, min_deg, max_deg, &tentative_gp);
-        if (visit_graph(&tentative_gp, true)) {
+        if (visit_graph(&tentative_gp, true, sd->have_short_path)) {
             graph new_g_canonical[MAXN];
             make_canonical(new_g, n, new_g_canonical);
             gp_set_add(sd->gp_set, new_g_canonical, n, edge_count, min_deg, max_deg);
@@ -276,17 +276,17 @@ bool search(struct SearchData *sd, setword neighbours, setword candidate_neighbo
 }
 
 void traverse_tree(struct GraphPlus *node,
-        bool (*callback)(struct GraphPlus *, bool))
+        bool (*callback)(struct GraphPlus *, bool, graph *))
 {
     if (node == NULL || callback == NULL)
         return;
     traverse_tree(node->left, callback);
-    callback(node, false);
+    callback(node, false, NULL);
     traverse_tree(node->right, callback);
 }
 
 // add a vertex to the graph
-bool visit_graph(struct GraphPlus *gp, bool tentative_version)
+bool visit_graph(struct GraphPlus *gp, bool tentative_version, graph *parent_have_short_path)
 {
     if (!tentative_version) {
         num_visited_by_order[gp->n]++;
@@ -346,7 +346,62 @@ bool visit_graph(struct GraphPlus *gp, bool tentative_version)
         return false;
 
     setword have_short_path[MAXN];
-    all_pairs_check_for_short_path(gp->graph, gp->n, MIN_GIRTH-3, have_short_path);
+    if (!tentative_version || MIN_GIRTH != 6) {
+        all_pairs_check_for_short_path(gp->graph, gp->n, MIN_GIRTH-3, have_short_path);
+    } else {
+        // TODO: tidy this up
+        // TODO: make this work for any value of MIN_GIRTH, and not just 6
+        for (int i=0; i<gp->n-1; i++) {
+            have_short_path[i] = parent_have_short_path[i];
+        }
+        setword last_vtx_1_path = gp->graph[gp->n-1];
+        setword last_vtx_2_path = 0;
+        setword last_vtx_3_path = 0;
+        setword tmp = last_vtx_1_path;
+        while (tmp) {
+            int v;
+            TAKEBIT(v, tmp);
+            last_vtx_2_path |= gp->graph[v];
+        }
+        last_vtx_2_path &= ~bit[gp->n-1];
+        tmp = last_vtx_2_path;
+        while (tmp) {
+            int v;
+            TAKEBIT(v, tmp);
+            last_vtx_3_path |= gp->graph[v];
+        }
+        last_vtx_3_path &= ~bit[gp->n-1];
+        tmp = last_vtx_1_path;
+        while (tmp) {
+            int v;
+            TAKEBIT(v, tmp);
+            setword tmp2 = last_vtx_2_path;
+            while (tmp2) {
+                int w;
+                TAKEBIT(w, tmp2);
+                have_short_path[v] |= bit[w];
+                have_short_path[w] |= bit[v];
+            }
+        }
+        tmp = last_vtx_1_path;
+        while (tmp) {
+            int v;
+            TAKEBIT(v, tmp);
+            setword tmp2 = last_vtx_1_path;
+            while (tmp2) {
+                int w;
+                TAKEBIT(w, tmp2);
+                have_short_path[v] |= bit[w];
+            }
+        }
+        have_short_path[gp->n-1] = last_vtx_1_path | last_vtx_2_path | last_vtx_3_path | bit[gp->n-1];
+        tmp = have_short_path[gp->n-1];
+        while (tmp) {
+            int v;
+            TAKEBIT(v, tmp);
+            have_short_path[v] |= bit[gp->n-1];
+        }
+    }
 
     setword forced_neighbours_copy = forced_neighbours;
     setword neighbours = 0;
@@ -385,7 +440,7 @@ void find_extremal_graphs(int n, int edge_count)
     EMPTYGRAPH(g,1,MAXN);
     struct GraphPlus gp;
     make_graph_plus(g, 1, 0, 0, 0, &gp);
-    visit_graph(&gp, false);
+    visit_graph(&gp, false, NULL);
 }
 
 int main(int argc, char *argv[])

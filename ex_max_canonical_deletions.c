@@ -199,9 +199,30 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
                 min_degs |= gt->min_degs;
         }
         int top = num_of_min_deg > min_deg + 1 ? min_deg : min_deg + 1;
-        for (int i=0; i<=top; i++)
-            if (ISELEMENT(&min_degs, i))
-                return deletion_is_canonical(new_g, n, min_deg, max_deg, degs, true);
+        for (int i=0; i<=top; i++) {
+            if (ISELEMENT(&min_degs, i)) {
+                if (deletion_is_canonical(new_g, n, min_deg, max_deg, degs, true)) {
+                    if (i > min_deg) {
+                        // We know that the min degree must be incremented in the graph with
+                        // one vertex more.  If any pair vertices of min degree have a short
+                        // path between them, we can return false.
+                        setword min_deg_vv = 0;
+                        for (int i=0; i<n-1; i++)  // don't include last vertex, since we don't have have_short_path for it
+                            if (degs[i] == min_deg)
+                                ADDELEMENT(&min_deg_vv, i);
+                        setword min_deg_vv_copy = min_deg_vv;
+                        while (min_deg_vv_copy) {
+                            int v;
+                            TAKEBIT(v, min_deg_vv_copy);
+                            setword s = min_deg_vv_copy & sd->have_short_path[v];
+                            if (s)
+                                return false;
+                        }
+                    }
+                    return true;
+                }
+            }
+        }
         return false;
     } else if (deletion_is_canonical(new_g, n, min_deg, max_deg, degs, false)) {
         struct GraphPlus tentative_gp;

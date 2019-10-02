@@ -1,0 +1,1 @@
+Improve splitting, maybe by splitting at two levels? Read McKay paper for ideas.

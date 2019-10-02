@@ -179,25 +179,22 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
 
     int min_deg = degs[n-1];
     int max_deg = sd->gp->max_deg + max_deg_incremented;
-    if (sd->tentativeness_level) {
-        if (!deletion_is_canonical(new_g, n, min_deg, max_deg, degs, true))
-            return false;
-        struct GraphPlus tentative_gp;
-        int edge_count = sd->gp->edge_count + min_deg;
-        make_graph_plus(new_g, n, edge_count, min_deg, max_deg, &tentative_gp);
-        return visit_graph(&tentative_gp, sd->tentativeness_level + 1, sd->have_short_path);
-    } else if (deletion_is_canonical(new_g, n, min_deg, max_deg, degs, false)) {
-        struct GraphPlus tentative_gp;
-        int edge_count = sd->gp->edge_count + min_deg;
-        make_graph_plus(new_g, n, edge_count, min_deg, max_deg, &tentative_gp);
-        if (visit_graph(&tentative_gp, 1, sd->have_short_path)) {
-            graph new_g_canonical[MAXN];
-            make_canonical(new_g, n, new_g_canonical);
-            gp_set_add(sd->gp_set, new_g_canonical, n, edge_count, min_deg, max_deg);
-            return true;
-        }
+
+    if (!deletion_is_canonical(new_g, n, min_deg, max_deg, degs, sd->tentativeness_level != 0))
+        return false;
+
+    struct GraphPlus tentative_gp;
+    int edge_count = sd->gp->edge_count + min_deg;
+    make_graph_plus(new_g, n, edge_count, min_deg, max_deg, &tentative_gp);
+    if (!visit_graph(&tentative_gp, sd->tentativeness_level + 1, sd->have_short_path))
+        return false;
+
+    if (sd->tentativeness_level == 0) {
+        graph new_g_canonical[MAXN];
+        make_canonical(new_g, n, new_g_canonical);
+        gp_set_add(sd->gp_set, new_g_canonical, n, edge_count, min_deg, max_deg);
     }
-    return false;
+    return true;
 }
 
 // Arguments:

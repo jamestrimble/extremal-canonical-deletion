@@ -363,20 +363,14 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
             int v;
             TAKEBIT(v, tmp);
             last_vtx_3_path |= gp->graph[v];
-        }
-        last_vtx_3_path &= ~bit[gp->n-1];
-        tmp = last_vtx_2_path;
-        while (tmp) {
-            int v;
-            TAKEBIT(v, tmp);
             have_short_path[v] |= last_vtx_1_path;
         }
+        last_vtx_3_path &= ~bit[gp->n-1];
         tmp = last_vtx_1_path;
         while (tmp) {
             int v;
             TAKEBIT(v, tmp);
-            have_short_path[v] |= last_vtx_1_path;
-            have_short_path[v] |= last_vtx_2_path;
+            have_short_path[v] |= (last_vtx_1_path | last_vtx_2_path);
         }
         have_short_path[gp->n-1] = last_vtx_1_path | last_vtx_2_path | last_vtx_3_path | bit[gp->n-1];
         tmp = have_short_path[gp->n-1];

@@ -7,6 +7,7 @@
 #include <limits.h>
 
 #define SPLITTING_ORDER 20
+#define MAX_TENTATIVENESS_LEVEL 4
 
 static int MIN_GIRTH;
 
@@ -102,7 +103,7 @@ bool deletion_is_better(int v, graph *g, int n, int min_deg, int max_deg)
 // put in here.
 // Assumption: the last vertex of g has degree equal to min_deg
 bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs,
-        bool use_tentative_version) {
+        int tentativeness_level) {
     int n0 = num_neighbours_of_deg_d(g, n-1, min_deg, degs);
     int nds0 = nb_deg_sum(g, n-1, degs);
     unsigned long long nnds0 = ULLONG_MAX;  // Only calculate this if we need it
@@ -125,7 +126,7 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs,
                     unsigned long long nnds1 = weighted_nb_nb_deg_sum(g, i, degs);
                     if (nnds1 > nnds0) {
                         return false;
-                    } else if (!use_tentative_version && nnds1 == nnds0) {
+                    } else if (!tentativeness_level && nnds1 == nnds0) {
                         // Delay the expensive checks that use Nauty;
                         // if we're lucky, we won't need to do them at all.
                         vertices_to_check_deletion[vertices_to_check_deletion_len++] = i;
@@ -147,14 +148,14 @@ struct SearchData
     setword *have_short_path;
     struct GraphPlusSet *gp_set;
     setword min_degs[2];
-    bool tentative_version;
+    int tentativeness_level;
     setword vertices_of_min_deg;
 };
 
 bool search(struct SearchData *sd,
         setword neighbours, setword candidate_neighbours, bool max_deg_incremented);
 
-bool visit_graph(struct GraphPlus *gp, bool tentative_version, graph *parent_have_short_path);
+bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_have_short_path);
 
 // sd->gp is the graph that we're augmenting
 bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_incremented)
@@ -178,7 +179,7 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
 
     int min_deg = degs[n-1];
     int max_deg = sd->gp->max_deg + max_deg_incremented;
-    if (sd->tentative_version) {
+    if (sd->tentativeness_level) {
         int num_of_min_deg;
         if (min_deg == sd->gp->min_deg) {
             num_of_min_deg = 1 + POPCOUNT(sd->vertices_of_min_deg & ~neighbours);
@@ -202,24 +203,14 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
         for (int i=0; i<=top; i++) {
             if (ISELEMENT(&min_degs, i)) {
                 if (deletion_is_canonical(new_g, n, min_deg, max_deg, degs, true)) {
-                    if (i > min_deg) {
-                        // We know that the min degree must be incremented in the graph with
-                        // one vertex more.  If any pair vertices of min degree have a short
-                        // path between them, we can return false.
-                        setword min_deg_vv = 0;
-                        for (int i=0; i<n-1; i++)  // don't include last vertex, since we don't have have_short_path for it
-                            if (degs[i] == min_deg)
-                                ADDELEMENT(&min_deg_vv, i);
-                        setword min_deg_vv_copy = min_deg_vv;
-                        while (min_deg_vv_copy) {
-                            int v;
-                            TAKEBIT(v, min_deg_vv_copy);
-                            setword s = min_deg_vv_copy & sd->have_short_path[v];
-                            if (s)
-                                return false;
-                        }
+                    if (sd->tentativeness_level == MAX_TENTATIVENESS_LEVEL) {
+                        return true;
+                    } else {
+                        struct GraphPlus tentative_gp;
+                        int edge_count = sd->gp->edge_count + min_deg;
+                        make_graph_plus(new_g, n, edge_count, min_deg, max_deg, &tentative_gp);
+                        return visit_graph(&tentative_gp, sd->tentativeness_level + 1, sd->have_short_path);
                     }
-                    return true;
                 }
             }
         }
@@ -228,7 +219,7 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
         struct GraphPlus tentative_gp;
         int edge_count = sd->gp->edge_count + min_deg;
         make_graph_plus(new_g, n, edge_count, min_deg, max_deg, &tentative_gp);
-        if (visit_graph(&tentative_gp, true, sd->have_short_path)) {
+        if (visit_graph(&tentative_gp, 1, sd->have_short_path)) {
             graph new_g_canonical[MAXN];
             make_canonical(new_g, n, new_g_canonical);
             gp_set_add(sd->gp_set, new_g_canonical, n, edge_count, min_deg, max_deg);
@@ -257,7 +248,7 @@ bool search(struct SearchData *sd, setword neighbours, setword candidate_neighbo
             // the next line ensures that the new vertex has min degree
             (neighbours_count <= sd->gp->min_deg || (neighbours & sd->vertices_of_min_deg) == sd->vertices_of_min_deg) &&
             output_graph(sd, neighbours, max_deg_incremented) &&
-            sd->tentative_version)
+            sd->tentativeness_level)
         return true;
 
     if (neighbours_count <= sd->gp->min_deg) {
@@ -268,7 +259,7 @@ bool search(struct SearchData *sd, setword neighbours, setword candidate_neighbo
             setword new_candidates = candidate_neighbours & ~sd->have_short_path[cand];
             if (search(sd, new_neighbours, new_candidates,
                     max_deg_incremented || POPCOUNT(sd->gp->graph[cand]) == sd->gp->max_deg) &&
-                    sd->tentative_version)
+                    sd->tentativeness_level)
                 return true;
         }
     }
@@ -276,22 +267,22 @@ bool search(struct SearchData *sd, setword neighbours, setword candidate_neighbo
 }
 
 void traverse_tree(struct GraphPlus *node,
-        bool (*callback)(struct GraphPlus *, bool, graph *))
+        bool (*callback)(struct GraphPlus *, int, graph *))
 {
     if (node == NULL || callback == NULL)
         return;
     traverse_tree(node->left, callback);
-    callback(node, false, NULL);
+    callback(node, 0, NULL);
     traverse_tree(node->right, callback);
 }
 
 // add a vertex to the graph
-bool visit_graph(struct GraphPlus *gp, bool tentative_version, graph *parent_have_short_path)
+bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_have_short_path)
 {
-    if (!tentative_version) {
+    if (!tentativeness_level) {
         num_visited_by_order[gp->n]++;
 
-        if (!tentative_version && gp->n==global_n) {
+        if (!tentativeness_level && gp->n==global_n) {
             // output graph
             global_graph_count++;
             show_graph(gp);
@@ -301,13 +292,13 @@ bool visit_graph(struct GraphPlus *gp, bool tentative_version, graph *parent_hav
         if (gp->n == SPLITTING_ORDER && global_mod!=0 && gp->hash%global_mod != global_res)
             return true;
     } else {
-        if (gp->n >= global_n - 1)
+        if (gp->n >= global_n - MAX_TENTATIVENESS_LEVEL)
             return true;
     }
 
     struct GraphPlusSet gp_set;
     struct GraphPlusSet *gp_set_ptr = NULL;
-    if (!tentative_version) {
+    if (!tentativeness_level) {
         gp_set = make_gp_set();
         gp_set_ptr = &gp_set;
     }
@@ -345,8 +336,11 @@ bool visit_graph(struct GraphPlus *gp, bool tentative_version, graph *parent_hav
     if (POPCOUNT(forced_neighbours) > gp->min_deg + 1)
         return false;
 
+    if (tentativeness_level == MAX_TENTATIVENESS_LEVEL)
+        return true;
+
     setword have_short_path[MAXN];
-    if (!tentative_version || MIN_GIRTH != 6) {
+    if (!tentativeness_level || MIN_GIRTH != 6) {
         all_pairs_check_for_short_path(gp->graph, gp->n, MIN_GIRTH-3, have_short_path);
     } else {
         // TODO: tidy this up
@@ -408,9 +402,9 @@ bool visit_graph(struct GraphPlus *gp, bool tentative_version, graph *parent_hav
     }
 
     struct SearchData sd = {gp, have_short_path, gp_set_ptr, {min_degs[0], min_degs[1]},
-            tentative_version, vertices_of_min_deg};
+            tentativeness_level, vertices_of_min_deg};
     bool search_result = search(&sd, neighbours, candidate_neighbours, max_deg_incremented);
-    if (tentative_version) {
+    if (tentativeness_level) {
         return search_result;
     } else {
         traverse_tree(gp_set.tree_head, visit_graph);
@@ -430,7 +424,7 @@ void find_extremal_graphs(int n, int edge_count)
     EMPTYGRAPH(g,1,MAXN);
     struct GraphPlus gp;
     make_graph_plus(g, 1, 0, 0, 0, &gp);
-    visit_graph(&gp, false, NULL);
+    visit_graph(&gp, 0, NULL);
 }
 
 int main(int argc, char *argv[])

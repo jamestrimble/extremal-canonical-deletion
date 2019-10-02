@@ -6,7 +6,6 @@
 #include <stdbool.h>
 #include <limits.h>
 
-#define SPLITTING_ORDER 20
 #define MAX_TENTATIVENESS_LEVEL 4
 
 static int MIN_GIRTH;
@@ -17,8 +16,9 @@ static statsblk stats;
 static long long nauty_calls = 0;
 
 int global_n;
-int global_res = 0;
-int global_mod = 0;
+int global_low_splitting_level = 0;
+int global_high_splitting_level = 0;
+int global_split_number = 0;
 
 unsigned long long global_graph_count = 0;
 
@@ -257,8 +257,13 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
             return true;        // return value of non-tentative version is unused
         }
 
-        if (gp->n == SPLITTING_ORDER && global_mod!=0 && gp->hash%global_mod != global_res)
-            return true;
+        if (global_n > global_high_splitting_level &&
+                gp->n >= global_low_splitting_level &&
+                gp->n <= global_high_splitting_level) {
+            bool hash_bit = (gp->hash & 1ull) != 0;
+            if ((((unsigned) global_split_number >> (gp->n - global_low_splitting_level)) & 1) == hash_bit)
+                return true;
+        }
     } else {
         if (gp->n >= global_n - MAX_TENTATIVENESS_LEVEL)
             return true;
@@ -377,7 +382,7 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
 
 void find_extremal_graphs(int n, int edge_count)
 {
-    if (global_mod > 0 && global_res > 0 && n <= SPLITTING_ORDER)
+    if (global_low_splitting_level > 0 && global_split_number != 0 && n <= global_high_splitting_level)
         return;
 
     make_possible_graph_types(n, edge_count, MIN_GIRTH);
@@ -412,8 +417,9 @@ int main(int argc, char *argv[])
     int n = atoi(argv[2]);
     int edge_count = atoi(argv[3]);
     if (argc > 4) {
-        global_res = atoi(argv[4]);
-        global_mod = atoi(argv[5]);
+        global_low_splitting_level = atoi(argv[4]);
+        global_high_splitting_level = atoi(argv[5]);
+        global_split_number = atoi(argv[6]);
     }
 
     global_n = n;

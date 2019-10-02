@@ -3,7 +3,14 @@
 MINGIRTH=$1
 MAXN=$2
 THREADS=$3
-MOD=$4
+MIN_SPLIT_LEVEL=$4
+MAX_SPLIT_LEVEL=$5
+
+if [ "$MIN_SPLIT_LEVEL" -eq "0" ]; then
+    num_split_levels=1
+else
+    num_split_levels=$((1 << (MAX_SPLIT_LEVEL - MIN_SPLIT_LEVEL + 1)))
+fi
 
 mkdir -p program-output
 mkdir -p output-summary
@@ -19,7 +26,7 @@ for n in $(seq 2 $MAXN); do
     EDGES=$(($EDGES+$MAXEDGEINCR))
     while true
     do
-	seq 0 $((MOD-1)) | xargs -n1 -s256 -x -P$THREADS -I'thr' sh -c "./ex_max_canonical_deletions $MINGIRTH $n $EDGES thr $MOD > program-output/$MINGIRTH-$n-$EDGES-thr-$MOD.out"
+	seq 0 $((num_split_levels-1)) | xargs -n1 -s256 -x -P$THREADS -I'splitnum' sh -c "./ex_max_canonical_deletions $MINGIRTH $n $EDGES $MIN_SPLIT_LEVEL $MAX_SPLIT_LEVEL splitnum > program-output/$MINGIRTH-$n-$EDGES-splitnum-$MIN_SPLIT_LEVEL-$MAX_SPLIT_LEVEL.out"
 	NUMGRAPHS=$(cat program-output/$MINGIRTH-$n-$EDGES-*.out | awk '/Total graph count/ {count += $4} END {print count}')
 	if [ "$NUMGRAPHS" -ne "0" ]
 	then

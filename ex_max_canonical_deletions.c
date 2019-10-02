@@ -180,41 +180,12 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
     int min_deg = degs[n-1];
     int max_deg = sd->gp->max_deg + max_deg_incremented;
     if (sd->tentativeness_level) {
-        int num_of_min_deg;
-        if (min_deg == sd->gp->min_deg) {
-            num_of_min_deg = 1 + POPCOUNT(sd->vertices_of_min_deg & ~neighbours);
-        } else {
-            num_of_min_deg = 0;
-            for (int i=0; i<n; i++)
-                if (degs[i] == min_deg)
-                    ++num_of_min_deg;
-        }
-        setword min_degs = 0;
-        for (int increment_max_deg_again=0; increment_max_deg_again<2; increment_max_deg_again++) {
-            struct GraphType * gt = find_graph_type_in_set(&(struct GraphType) {
-                        .num_vertices=n + 1,
-                        .num_edges_minus_min_deg=sd->gp->edge_count + min_deg,
-                        .max_deg=max_deg + increment_max_deg_again
-                    });
-            if (gt)
-                min_degs |= gt->min_degs;
-        }
-        int top = num_of_min_deg > min_deg + 1 ? min_deg : min_deg + 1;
-        for (int i=0; i<=top; i++) {
-            if (ISELEMENT(&min_degs, i)) {
-                if (deletion_is_canonical(new_g, n, min_deg, max_deg, degs, true)) {
-                    if (sd->tentativeness_level == MAX_TENTATIVENESS_LEVEL) {
-                        return true;
-                    } else {
-                        struct GraphPlus tentative_gp;
-                        int edge_count = sd->gp->edge_count + min_deg;
-                        make_graph_plus(new_g, n, edge_count, min_deg, max_deg, &tentative_gp);
-                        return visit_graph(&tentative_gp, sd->tentativeness_level + 1, sd->have_short_path);
-                    }
-                }
-            }
-        }
-        return false;
+        if (!deletion_is_canonical(new_g, n, min_deg, max_deg, degs, true))
+            return false;
+        struct GraphPlus tentative_gp;
+        int edge_count = sd->gp->edge_count + min_deg;
+        make_graph_plus(new_g, n, edge_count, min_deg, max_deg, &tentative_gp);
+        return visit_graph(&tentative_gp, sd->tentativeness_level + 1, sd->have_short_path);
     } else if (deletion_is_canonical(new_g, n, min_deg, max_deg, degs, false)) {
         struct GraphPlus tentative_gp;
         int edge_count = sd->gp->edge_count + min_deg;
@@ -292,7 +263,7 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
         if (gp->n == SPLITTING_ORDER && global_mod!=0 && gp->hash%global_mod != global_res)
             return true;
     } else {
-        if (gp->n >= global_n - MAX_TENTATIVENESS_LEVEL)
+        if (gp->n == global_n - MAX_TENTATIVENESS_LEVEL)
             return true;
     }
 

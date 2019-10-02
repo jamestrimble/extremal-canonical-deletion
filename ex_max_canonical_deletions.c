@@ -263,7 +263,7 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
         if (gp->n == SPLITTING_ORDER && global_mod!=0 && gp->hash%global_mod != global_res)
             return true;
     } else {
-        if (gp->n == global_n - MAX_TENTATIVENESS_LEVEL)
+        if (gp->n >= global_n - MAX_TENTATIVENESS_LEVEL)
             return true;
     }
 

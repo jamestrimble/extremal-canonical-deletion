@@ -260,8 +260,8 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
         if (global_n > global_high_splitting_level &&
                 gp->n >= global_low_splitting_level &&
                 gp->n <= global_high_splitting_level) {
-            bool hash_bit = (gp->hash & 1ull) != 0;
-            if ((((unsigned) global_split_number >> (gp->n - global_low_splitting_level)) & 1) == hash_bit)
+            bool bit = (num_visited_by_order[gp->n] & 1ull) != 0;
+            if ((((unsigned) global_split_number >> (gp->n - global_low_splitting_level)) & 1) == bit)
                 return true;
         }
     } else {

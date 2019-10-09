@@ -102,7 +102,8 @@ static bool min_and_max_deg_are_feasible(int n, int min_deg, int max_deg, int ed
     return true;
 }
 
-static void make_possible_graph_types_recurse(int n, int edge_count, int min_deg, int max_deg, int min_girth)
+static void make_possible_graph_types_recurse(int n, int edge_count, int min_deg, int max_deg, int min_girth,
+        int lb_on_num_vv_of_min_deg)
 {
     if (n == 1)
         return;
@@ -113,7 +114,7 @@ static void make_possible_graph_types_recurse(int n, int edge_count, int min_deg
                 .max_deg=max_deg
             };
 
-    if (add_graph_type_to_set(&graph_type, min_deg)) {
+    if (add_graph_type_to_set(&graph_type, min_deg, lb_on_num_vv_of_min_deg)) {
         int small_g_ec = edge_count - min_deg;
         if (small_g_ec >= 0) {
             // i is min deg in the graph with one vertex fewer
@@ -122,10 +123,36 @@ static void make_possible_graph_types_recurse(int n, int edge_count, int min_deg
             for (int i=start_i; i<=MIN_DEG_UPPER_BOUND; i++) {
                 if (i==min_deg && ok_not_to_try_min_deg(n, min_deg, edge_count))
                     continue;
+                if (i > min_deg && lb_on_num_vv_of_min_deg > 1) {
+                    break;
+                }
                 int start_j = MAX(i, max_deg-1);
                 for (int j=start_j; j<=max_deg; j++) {
                     if (min_and_max_deg_are_feasible(n-1, i, j, small_g_ec, min_girth)) {
-                        make_possible_graph_types_recurse(n-1, small_g_ec, i, j, min_girth);
+                        int lb = 1;
+                        if (i == min_deg) {
+                            lb = MAX(1, lb_on_num_vv_of_min_deg - 1);
+//                        } else if (max_deg == min_deg + 1) {
+//                            int num_endpoints = edge_count * 2;
+//                            int num_endpoints_if_all_min_deg = min_deg * n;
+//                            int num_vertices_of_max_deg = num_endpoints - num_endpoints_if_all_min_deg;
+//                            int num_vertices_of_min_degree = n - num_vertices_of_max_deg;
+//                            int num_endpoints_of_vv_of_max_deg = num_vertices_of_max_deg * max_deg;
+//                            int a = num_endpoints_of_vv_of_max_deg / num_vertices_of_min_degree;
+//                            int a_vertex_of_min_deg_has_at_least_this_number_of_nbs_of_min_deg = min_deg - a;
+//                            lb = MAX(1, a_vertex_of_min_deg_has_at_least_this_number_of_nbs_of_min_deg);
+                        } else if (max_deg > min_deg) {
+                            int num_endpoints = edge_count * 2;
+                            int num_endpoints_if_all_min_deg = min_deg * n;
+                            int excess_endpoints = num_endpoints - num_endpoints_if_all_min_deg;
+                            int excess_endpoints1 = excess_endpoints - (max_deg - min_deg);
+                            int lb_on_num_vertices_of_min_degree = MAX(1, n - 1 - excess_endpoints1);
+                            int ub_on_num_endpoints_of_vv_not_of_min_deg = num_endpoints - (min_deg * lb_on_num_vertices_of_min_degree);
+                            int a = ub_on_num_endpoints_of_vv_not_of_min_deg / lb_on_num_vertices_of_min_degree;
+                            int a_vertex_of_min_deg_has_at_least_this_number_of_nbs_of_min_deg = min_deg - a;
+                            lb = MAX(1, a_vertex_of_min_deg_has_at_least_this_number_of_nbs_of_min_deg);
+                        }
+                        make_possible_graph_types_recurse(n-1, small_g_ec, i, j, min_girth, lb);
                     }
                 }
             }
@@ -138,7 +165,7 @@ void make_possible_graph_types(int n, int edge_count, int min_girth)
     for (int min_deg=0; min_deg<=MIN_DEG_UPPER_BOUND; min_deg++) {
         for (int max_deg=min_deg; max_deg<=MAX_DEG_UPPER_BOUND; max_deg++) {
             if (min_and_max_deg_are_feasible(n, min_deg, max_deg, edge_count, min_girth)) {
-                make_possible_graph_types_recurse(n, edge_count, min_deg, max_deg, min_girth);
+                make_possible_graph_types_recurse(n, edge_count, min_deg, max_deg, min_girth, 1);
             }
         }
     }
@@ -157,13 +184,15 @@ struct GraphType * find_graph_type_in_set(struct GraphType *graph_type)
 }
 
 // Returns true if the graph_type was added, and false if it was already present
-bool add_graph_type_to_set(struct GraphType *graph_type, int min_deg)
+bool add_graph_type_to_set(struct GraphType *graph_type, int min_deg, int lb_on_num_vv_of_min_deg)
 {
     struct GraphType *gt = find_graph_type_in_set(graph_type);
     if (!gt) {
         unsigned int hash_val = hash_graph_type(graph_type);
         struct GraphType *graph_type_copy = emalloc(sizeof(*graph_type_copy));
         *graph_type_copy = *graph_type;
+        for (int i=0; i<MAXN; i++)
+            graph_type_copy->lb_on_num_vv_of_min_deg_tried[i] = 0;
         graph_type_copy->min_degs = 0;
         ADDELEMENT(&graph_type_copy->min_degs, min_deg);
         graph_type_copy->next = graph_type_list_heads[hash_val];
@@ -179,7 +208,12 @@ bool add_graph_type_to_set(struct GraphType *graph_type, int min_deg)
             ADDELEMENT(&gt->min_degs, min_deg);
             return true;
         } else {
-            return false;
+            if (!ISELEMENT(&gt->lb_on_num_vv_of_min_deg_tried[min_deg], lb_on_num_vv_of_min_deg)) {
+                ADDELEMENT(&gt->lb_on_num_vv_of_min_deg_tried[min_deg], lb_on_num_vv_of_min_deg);
+                return true;
+            } else {
+                return false;
+            }
         }
     }
 }

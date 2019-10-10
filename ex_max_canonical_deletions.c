@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <limits.h>
 
-#define MAX_TENTATIVENESS_LEVEL 4
+#define MAX_TENTATIVENESS_LEVEL 3
 
 static int MIN_GIRTH;
 

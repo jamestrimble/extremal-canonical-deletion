@@ -265,7 +265,7 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
                 return true;
         }
     } else {
-        if (gp->n >= global_n - MAX_TENTATIVENESS_LEVEL)
+        if (gp->n == global_n)
             return true;
     }
 
@@ -309,7 +309,7 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
     if (POPCOUNT(forced_neighbours) > gp->min_deg + 1)
         return false;
 
-    if (tentativeness_level == MAX_TENTATIVENESS_LEVEL)
+    if (tentativeness_level == MAX_TENTATIVENESS_LEVEL || (tentativeness_level != 0 && gp->n == global_n))
         return true;
 
     setword have_short_path[MAXN];

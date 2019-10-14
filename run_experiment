@@ -15,10 +15,12 @@ else
 fi
 
 mkdir -p program-output
+mkdir -p program-output/zipped
 mkdir -p output-summary
 
 rm -f output-summary/summary.out
 rm -f program-output/*.out
+rm -f program-output/zipped/*.tar.gz
 
 EDGES=0
 MAXEDGEINCR=8
@@ -30,6 +32,8 @@ for n in $(seq 2 $MAXN); do
     do
 	seq 0 $((num_split_levels-1)) | xargs -n1 -s256 -x -P$THREADS -I'splitnum' sh -c "./ex_max_canonical_deletions $MINGIRTH $n $EDGES $MIN_SPLIT_LEVEL $MAX_SPLIT_LEVEL splitnum > program-output/$MINGIRTH-$n-$EDGES-splitnum-$MIN_SPLIT_LEVEL-$MAX_SPLIT_LEVEL.out"
 	NUMGRAPHS=$(cat program-output/$MINGIRTH-$n-$EDGES-*.out | awk '/Total graph count/ {count += $4} END {print count}')
+	tar czf program-output/zipped/$MINGIRTH-$n-$EDGES-$MIN_SPLIT_LEVEL-$MAX_SPLIT_LEVEL.tar.gz program-output/$MINGIRTH-$n-$EDGES-*-$MIN_SPLIT_LEVEL-$MAX_SPLIT_LEVEL.out
+	rm program-output/$MINGIRTH-$n-$EDGES-*-$MIN_SPLIT_LEVEL-$MAX_SPLIT_LEVEL.out
 	if [ "$NUMGRAPHS" -ne "0" ]
 	then
 	    echo $MINGIRTH $n $EDGES $NUMGRAPHS >> output-summary/summary.out

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 MINGIRTH=$1
 MAXN=$2
 THREADS=$3

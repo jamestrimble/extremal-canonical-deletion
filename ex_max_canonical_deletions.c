@@ -37,7 +37,8 @@ void make_canonical(graph *g, int n, graph *canon_g)
 {
     int lab[MAXN],ptn[MAXN],orbits[MAXN];
     EMPTYGRAPH(canon_g,1,MAXN);
-    densenauty(g,lab,ptn,orbits,&options,&stats,1,n,canon_g);
+    setword workspace[120];
+    nauty(g,lab,ptn,NULL,orbits,&options,&stats,workspace,120,1,n,canon_g);
     nauty_calls++;
 }
 

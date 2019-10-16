@@ -169,7 +169,7 @@ void canon_search(graph *g, graph *incumbent_g, int n, int *v_arr,
                 int right_pos = set_len[j] - 1;
                 for (int k=0; k<set_len[j]; k++) {
                     int v = set_j[k];
-                    if (ISELEMENT(&g[w], v)) {
+                    if (g[w] & bit[v]) {   // if edge w--v exists
                         new_v_arr[set_start[j] + pos++] = v;
                     } else {
                         new_v_arr[set_start[j] + right_pos--] = v;

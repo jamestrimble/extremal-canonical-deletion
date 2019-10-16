@@ -158,15 +158,15 @@ void canon_search(graph *g, graph *incumbent_g, int n, int *v_arr,
             new_v_arr[j] = v_arr[j];
         }
         for (int j=0; j<num_sets; j++) {
-            int *set_j = v_arr + set_start[j];
-            int pos = 0;
-            int right_pos = set_len[j] - 1;
             // McSplit-style splitting
             if (set_len[j] == 1) {
                 new_set_start[new_num_sets] = set_start[j];
                 new_set_len[new_num_sets] = set_len[j];
                 ++new_num_sets;
             } else {
+                int *set_j = v_arr + set_start[j];
+                int pos = 0;
+                int right_pos = set_len[j] - 1;
                 for (int k=0; k<set_len[j]; k++) {
                     int v = set_j[k];
                     if (ISELEMENT(&g[w], v)) {

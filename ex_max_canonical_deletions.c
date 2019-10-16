@@ -132,9 +132,11 @@ void canon_search(graph *g, graph *incumbent_g, int n,
         if (len > max_set_len) {
             max_set_len = len;
         }
-        if (len < min_set_len) {
+        if (len <= min_set_len) {
             min_set_len = len;
             best_set_idx = i;
+            if (len == 1 && max_set_len > 1)
+                break;    // just to save time
         }
     }
     if (max_set_len == 1) {

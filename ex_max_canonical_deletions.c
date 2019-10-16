@@ -80,14 +80,14 @@ bool compare_vtx_info(struct VtxInfo *vi0, struct VtxInfo *vi1)
     return false;
 }
 
-void canon_search(graph *g, graph *incumbent_g, int n, int *v_arr,
-        int *set_start, int *set_len, int num_sets, int *order, int order_len)
+void canon_search(graph *g, graph *incumbent_g, int n,
+        setword *vv_set, int num_sets, int *order, int order_len)
 {
     int max_set_len = 1;
     int min_set_len = 99999;
     int best_set_idx = -1;
     for (int i=0; i<num_sets; i++) {
-        int len = set_len[i];
+        int len = POPCOUNT(vv_set[i]);
         if (len > max_set_len) {
             max_set_len = len;
         }
@@ -100,7 +100,7 @@ void canon_search(graph *g, graph *incumbent_g, int n, int *v_arr,
         //printf("max 1!\n");
         //printf("order len %d\n", order_len);
         for (int i=0; i<num_sets; i++) {
-            order[order_len++] = v_arr[set_start[i]];
+            order[order_len++] = FIRSTBITNZ(vv_set[i]);
         }
 //        for (int j=0; j<n; j++) {
 //            printf("%d ", order[j]);
@@ -111,6 +111,7 @@ void canon_search(graph *g, graph *incumbent_g, int n, int *v_arr,
             order_inv[order[i]] = i;
 
         graph new_g[MAXN] = {};
+        // TODO: make graph in reverse order?
         for (int i=0; i<n; i++) {
             setword row = g[order[i]];
             while (row) {
@@ -141,61 +142,33 @@ void canon_search(graph *g, graph *incumbent_g, int n, int *v_arr,
         }
         return;
     }
-    int *set = v_arr + set_start[best_set_idx];
-    for (int i=0; i<set_len[best_set_idx]; i++) {
-        int w = set[i];
-        int tmp = set[min_set_len - 1];
-        set[min_set_len - 1] = set[i];
-        set[i] = tmp;
 
-        set_len[best_set_idx]--;   // temporarily exclude one element
+    setword vv = vv_set[best_set_idx];
+    while (vv) {
+        int w;
+        TAKEBIT(w, vv);
+        vv_set[best_set_idx] ^= bit[w];   // temporarily remove w
 
-        int new_v_arr[MAXN];
-        int new_set_start[MAXN];
-        int new_set_len[MAXN];
+        setword new_vv_set[MAXN];
         int new_num_sets = 0;
-        for (int j=0; j<n; j++) {
-            new_v_arr[j] = v_arr[j];
-        }
         for (int j=0; j<num_sets; j++) {
+            int set_len = POPCOUNT(vv_set[j]);
             // McSplit-style splitting
-            if (set_len[j] == 1) {
-                new_set_start[new_num_sets] = set_start[j];
-                new_set_len[new_num_sets] = set_len[j];
-                ++new_num_sets;
+            if (set_len == 1) {
+                new_vv_set[new_num_sets++] = vv_set[j];
             } else {
-                int *set_j = v_arr + set_start[j];
-                int pos = 0;
-                int right_pos = set_len[j] - 1;
-                for (int k=0; k<set_len[j]; k++) {
-                    int v = set_j[k];
-                    if (g[w] & bit[v]) {   // if edge w--v exists
-                        new_v_arr[set_start[j] + pos++] = v;
-                    } else {
-                        new_v_arr[set_start[j] + right_pos--] = v;
-                    }
-                }
-                if (pos != 0) {
-                    new_set_start[new_num_sets] = set_start[j];
-                    new_set_len[new_num_sets] = pos;
-                    ++new_num_sets;
-                }
-                if (right_pos != set_len[j] - 1) {
-                    new_set_start[new_num_sets] = set_start[j] + right_pos + 1;
-                    new_set_len[new_num_sets] = set_len[j] - 1 - right_pos;
-                    ++new_num_sets;
-                }
+                setword a = vv_set[j] & g[w];
+                setword b = vv_set[j] & ~g[w];
+                if (a != 0)
+                    new_vv_set[new_num_sets++] = a;
+                if (b != 0)
+                    new_vv_set[new_num_sets++] = b;
             }
         }
         order[order_len++] = w;
-        canon_search(g, incumbent_g, n, new_v_arr, new_set_start, new_set_len, new_num_sets, order, order_len);
+        canon_search(g, incumbent_g, n, new_vv_set, new_num_sets, order, order_len);
         --order_len;
-        set_len[best_set_idx]++;   // re-add element that was temporarily removed
-
-        // return w to where it was before
-        tmp = set[min_set_len - 1];
-        set[min_set_len - 1] = set[i];
-        set[i] = tmp;
+        vv_set[best_set_idx] ^= bit[w];   // add w back
     }
 }
 
@@ -212,30 +185,24 @@ void make_canonical(graph *g, int n, graph *canon_g)
 
     INSERTION_SORT(struct VtxInfo, vtx_info, n, compare_vtx_info(&vtx_info[j], &vtx_info[j-1]));
 
-    int v_arr[MAXN];
-    int set_start[MAXN];
-    int set_len[MAXN];
-    int num_sets = 0;
-    int order[MAXN];
+    setword vv_set[MAXN];
     struct VtxInfo prev_vtx_info = (struct VtxInfo) {-1, -1, 0};
-    int pos = 0;
+    int current_set_num = -1;
     for (int i=0; i<n; i++) {
-        v_arr[pos] = vtx_info[i].v;
         if (vtx_info[i].deg != prev_vtx_info.deg || vtx_info[i].nnds != prev_vtx_info.nnds) {
-            set_start[num_sets] = pos;
-            set_len[num_sets] = 1;
-            ++num_sets;
-        } else {
-            ++set_len[num_sets - 1];
+            ++current_set_num;
+            vv_set[current_set_num] = 0;
         }
-        ++pos;
+        vv_set[current_set_num] |= bit[vtx_info[i].v];
         prev_vtx_info = vtx_info[i];
     }
+    int num_sets = current_set_num + 1;
 
     graph incumbent_g[MAXN] = {};
     for (int i=0; i<n; i++)
         incumbent_g[i] = ~0ull;
-    canon_search(g, incumbent_g, n, v_arr, set_start, set_len, num_sets, order, 0);
+    int order[MAXN];
+    canon_search(g, incumbent_g, n, vv_set, num_sets, order, 0);
 
     for (int i=0; i<n; i++)
         canon_g[i] = incumbent_g[i];

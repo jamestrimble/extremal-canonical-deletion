@@ -116,7 +116,10 @@ void canon_search(graph *g, graph *incumbent_g, int n, int *v_arr,
             while (row) {
                 int w;
                 TAKEBIT(w, row);
+                if (w > i)
+                    break;
                 ADDELEMENT(&new_g[order_inv[i]], order_inv[w]);
+                ADDELEMENT(&new_g[order_inv[w]], order_inv[i]);
             }
         }
 

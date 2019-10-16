@@ -97,15 +97,9 @@ void canon_search(graph *g, graph *incumbent_g, int n,
         }
     }
     if (max_set_len == 1) {
-        //printf("max 1!\n");
-        //printf("order len %d\n", order_len);
         for (int i=0; i<num_sets; i++) {
             order[order_len++] = FIRSTBITNZ(vv_set[i]);
         }
-//        for (int j=0; j<n; j++) {
-//            printf("%d ", order[j]);
-//        }
-        //printf("\n");
         int order_inv[MAXN];
         for (int i=0; i<n; i++)
             order_inv[order[i]] = i;

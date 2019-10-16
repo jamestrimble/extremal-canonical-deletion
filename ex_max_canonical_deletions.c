@@ -80,6 +80,47 @@ bool compare_vtx_info(struct VtxInfo *vi0, struct VtxInfo *vi1)
     return false;
 }
 
+void possibly_update_incumbent(graph *g, int n, int *order, int order_len,
+        setword *vv_set, int num_sets, graph *incumbent_g)
+{
+    for (int i=0; i<num_sets; i++) {
+        order[order_len++] = FIRSTBITNZ(vv_set[i]);
+    }
+    int order_inv[MAXN];
+    for (int i=0; i<n; i++)
+        order_inv[order[i]] = i;
+
+    graph new_g[MAXN] = {};
+    for (int i=0; i<n; i++) {
+        setword row = g[order[i]];
+        while (row) {
+            int w;
+            TAKEBIT(w, row);
+            ADDELEMENT(&new_g[i], order_inv[w]);
+        }
+        // do the comparison with the incumbent before making the whole new graph
+        if (new_g[i] != incumbent_g[i]) {
+            if (new_g[i] < incumbent_g[i]) {
+                // update incumbent
+                for (int j=0; j<=i; j++) {
+                    incumbent_g[j] = new_g[j];
+                }
+                // make the rest of the re-ordered graph directly in incumbent_g
+                for (int j=i+1; j<n; j++) {
+                    incumbent_g[j] = 0;
+                    setword row = g[order[j]];
+                    while (row) {
+                        int w;
+                        TAKEBIT(w, row);
+                        ADDELEMENT(&incumbent_g[j], order_inv[w]);
+                    }
+                }
+            }
+            return;
+        }
+    }
+}
+
 void canon_search(graph *g, graph *incumbent_g, int n,
         setword *vv_set, int num_sets, int *order, int order_len)
 {
@@ -97,43 +138,7 @@ void canon_search(graph *g, graph *incumbent_g, int n,
         }
     }
     if (max_set_len == 1) {
-        for (int i=0; i<num_sets; i++) {
-            order[order_len++] = FIRSTBITNZ(vv_set[i]);
-        }
-        int order_inv[MAXN];
-        for (int i=0; i<n; i++)
-            order_inv[order[i]] = i;
-
-        graph new_g[MAXN] = {};
-        // TODO: make graph in reverse order?
-        for (int i=0; i<n; i++) {
-            setword row = g[order[i]];
-            while (row) {
-                int w;
-                TAKEBIT(w, row);
-                ADDELEMENT(&new_g[i], order_inv[w]);
-            }
-            // do the comparison with the incumbent before making the whole new graph
-            if (new_g[i] != incumbent_g[i]) {
-                if (new_g[i] < incumbent_g[i]) {
-                    // update incumbent
-                    for (int j=0; j<=i; j++) {
-                        incumbent_g[j] = new_g[j];
-                    }
-                    // make the rest of the re-ordered graph directly in incumbent_g
-                    for (int j=i+1; j<n; j++) {
-                        incumbent_g[j] = 0;
-                        setword row = g[order[j]];
-                        while (row) {
-                            int w;
-                            TAKEBIT(w, row);
-                            ADDELEMENT(&incumbent_g[j], order_inv[w]);
-                        }
-                    }
-                }
-                return;
-            }
-        }
+        possibly_update_incumbent(g, n, order, order_len, vv_set, num_sets, incumbent_g);
         return;
     }
 

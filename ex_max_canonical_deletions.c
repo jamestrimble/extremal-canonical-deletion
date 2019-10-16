@@ -121,27 +121,32 @@ void possibly_update_incumbent(graph *g, int n, int *order, int order_len,
     }
 }
 
+bool only_singleton_sets_exist(setword *vv_set, int num_sets)
+{
+    for (int i=0; i<num_sets; i++)
+        if (POPCOUNT(vv_set[i]) > 1)
+            return false;
+    return true;
+}
+
 void canon_search(graph *g, graph *incumbent_g, int n,
         setword *vv_set, int num_sets, int *order, int order_len)
 {
-    int max_set_len = 1;
+    if (only_singleton_sets_exist(vv_set, num_sets)) {
+        possibly_update_incumbent(g, n, order, order_len, vv_set, num_sets, incumbent_g);
+        return;
+    }
+
     int min_set_len = 99999;
     int best_set_idx = -1;
     for (int i=0; i<num_sets; i++) {
         int len = POPCOUNT(vv_set[i]);
-        if (len > max_set_len) {
-            max_set_len = len;
-        }
-        if (len <= min_set_len) {
+        if (len < min_set_len) {
             min_set_len = len;
             best_set_idx = i;
-            if (len == 1 && max_set_len > 1)
+            if (len == 1)
                 break;    // just to save time
         }
-    }
-    if (max_set_len == 1) {
-        possibly_update_incumbent(g, n, order, order_len, vv_set, num_sets, incumbent_g);
-        return;
     }
 
     setword vv = vv_set[best_set_idx];

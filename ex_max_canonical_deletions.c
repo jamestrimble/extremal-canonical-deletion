@@ -147,26 +147,19 @@ void canon_search(graph *g, graph *incumbent_g, int n,
         int w;
         TAKEBIT(w, vv);
         vv_set[best_set_idx] ^= bit[w];   // temporarily remove w
-
         setword new_vv_set[MAXN];
         int new_num_sets = 0;
         for (int j=0; j<num_sets; j++) {
-            int set_len = POPCOUNT(vv_set[j]);
             // McSplit-style splitting
-            if (set_len == 1) {
-                new_vv_set[new_num_sets++] = vv_set[j];
-            } else {
-                setword a = vv_set[j] & g[w];
-                setword b = vv_set[j] & ~g[w];
-                if (a != 0)
-                    new_vv_set[new_num_sets++] = a;
-                if (b != 0)
-                    new_vv_set[new_num_sets++] = b;
-            }
+            setword a = vv_set[j] & g[w];
+            setword b = vv_set[j] & ~g[w];
+            if (a != 0)
+                new_vv_set[new_num_sets++] = a;
+            if (b != 0)
+                new_vv_set[new_num_sets++] = b;
         }
-        order[order_len++] = w;
-        canon_search(g, incumbent_g, n, new_vv_set, new_num_sets, order, order_len);
-        --order_len;
+        order[order_len] = w;
+        canon_search(g, incumbent_g, n, new_vv_set, new_num_sets, order, order_len+1);
         vv_set[best_set_idx] ^= bit[w];   // add w back
     }
 }

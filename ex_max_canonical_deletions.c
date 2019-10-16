@@ -129,14 +129,8 @@ bool only_singleton_sets_exist(setword *vv_set, int num_sets)
     return true;
 }
 
-void canon_search(graph *g, graph *incumbent_g, int n,
-        setword *vv_set, int num_sets, int *order, int order_len)
+int choose_set_for_splitting(setword *vv_set, int num_sets)
 {
-    if (only_singleton_sets_exist(vv_set, num_sets)) {
-        possibly_update_incumbent(g, n, order, order_len, vv_set, num_sets, incumbent_g);
-        return;
-    }
-
     int min_set_len = 99999;
     int best_set_idx = -1;
     for (int i=0; i<num_sets; i++) {
@@ -148,6 +142,18 @@ void canon_search(graph *g, graph *incumbent_g, int n,
                 break;    // just to save time
         }
     }
+    return best_set_idx;
+}
+
+void canon_search(graph *g, graph *incumbent_g, int n,
+        setword *vv_set, int num_sets, int *order, int order_len)
+{
+    if (only_singleton_sets_exist(vv_set, num_sets)) {
+        possibly_update_incumbent(g, n, order, order_len, vv_set, num_sets, incumbent_g);
+        return;
+    }
+
+    int best_set_idx = choose_set_for_splitting(vv_set, num_sets);
 
     setword vv = vv_set[best_set_idx];
     while (vv) {

@@ -11,9 +11,12 @@
 static int MIN_GIRTH;
 
 static DEFAULTOPTIONS_GRAPH(options);
-static statsblk stats;
 
-static long long nauty_calls = 0;
+#ifndef SELF_CONTAINED
+static statsblk stats;
+#endif
+
+static long long canonicalisation_calls = 0;
 
 int global_n;
 int global_low_splitting_level = 0;
@@ -33,13 +36,204 @@ void delete_neighbourhood(int v, graph *g)
     }
 }
 
+struct VtxInfo
+{
+    int v;
+    int deg;
+    unsigned long long nnds;
+};
+
+void show_graph_(graph *g, int n)
+{
+    printf("Graph with %d vertices\n", n);
+    for (int i=0; i<n; i++) {
+        for (int j=0; j<n; j++) {
+            printf("%s ", ISELEMENT(&g[i], j) ? "X" : ".");
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+#define INSERTION_SORT(type, arr, arr_len, swap_condition) do { \
+    for (int i=1; i<arr_len; i++) {                             \
+        for (int j=i; j>=1; j--) {                              \
+            if (swap_condition) {                               \
+                type tmp = arr[j-1];                            \
+                arr[j-1] = arr[j];                              \
+                arr[j] = tmp;                                   \
+            } else {                                            \
+                break;                                          \
+            }                                                   \
+        }                                                       \
+    }                                                           \
+} while(0);
+
+bool compare_vtx_info(struct VtxInfo *vi0, struct VtxInfo *vi1)
+{
+    if (vi0->deg < vi1->deg)
+        return true;
+    if (vi0->deg > vi1->deg)
+        return false;
+    if (vi0->nnds < vi1->nnds)
+        return true;
+    return false;
+}
+
+void canon_search(graph *g, graph *incumbent_g, int n, int *v_arr,
+        int *set_start, int *set_len, int num_sets, int *order, int order_len)
+{
+    int max_set_len = 1;
+    int min_set_len = 99999;
+    int best_set_idx = -1;
+    for (int i=0; i<num_sets; i++) {
+        int len = set_len[i];
+        if (len > max_set_len) {
+            max_set_len = len;
+        }
+        if (len < min_set_len) {
+            min_set_len = len;
+            best_set_idx = i;
+        }
+    }
+    if (max_set_len == 1) {
+        //printf("max 1!\n");
+        //printf("order len %d\n", order_len);
+        for (int i=0; i<num_sets; i++) {
+            order[order_len++] = v_arr[set_start[i]];
+        }
+//        for (int j=0; j<n; j++) {
+//            printf("%d ", order[j]);
+//        }
+        //printf("\n");
+        int order_inv[MAXN];
+        for (int i=0; i<n; i++)
+            order_inv[order[i]] = i;
+
+        graph new_g[MAXN] = {};
+        for (int i=0; i<n; i++) {
+            setword row = g[i];
+            while (row) {
+                int w;
+                TAKEBIT(w, row);
+                ADDELEMENT(&new_g[order_inv[i]], order_inv[w]);
+            }
+        }
+
+        if (compare_graphs(0, 0, new_g, incumbent_g, n) == LESS_THAN) {
+            //printf("Update canon\n");
+            for (int i=0; i<MAXN; i++) {
+                incumbent_g[i] = new_g[i];
+            }
+        }
+        return;
+    }
+    int *set = v_arr + set_start[best_set_idx];
+    for (int i=0; i<set_len[best_set_idx]; i++) {
+        int w = set[i];
+        int tmp = set[min_set_len - 1];
+        set[min_set_len - 1] = set[i];
+        set[i] = tmp;
+
+        set_len[best_set_idx]--;   // temporarily exclude one element
+
+        int new_v_arr[MAXN];
+        int new_set_start[MAXN];
+        int new_set_len[MAXN];
+        int new_num_sets = 0;
+        for (int j=0; j<n; j++) {
+            new_v_arr[j] = v_arr[j];
+        }
+        for (int j=0; j<num_sets; j++) {
+            int *set_j = v_arr + set_start[j];
+            int pos = 0;
+            int right_pos = set_len[j] - 1;
+            // McSplit-style splitting
+            if (set_len[j] == 1) {
+                new_set_start[new_num_sets] = set_start[j];
+                new_set_len[new_num_sets] = set_len[j];
+                ++new_num_sets;
+            } else {
+                for (int k=0; k<set_len[j]; k++) {
+                    int v = set_j[k];
+                    if (ISELEMENT(&g[w], v)) {
+                        new_v_arr[set_start[j] + pos++] = v;
+                    } else {
+                        new_v_arr[set_start[j] + right_pos--] = v;
+                    }
+                }
+                if (pos != 0) {
+                    new_set_start[new_num_sets] = set_start[j];
+                    new_set_len[new_num_sets] = pos;
+                    ++new_num_sets;
+                }
+                if (right_pos != set_len[j] - 1) {
+                    new_set_start[new_num_sets] = set_start[j] + right_pos + 1;
+                    new_set_len[new_num_sets] = set_len[j] - 1 - right_pos;
+                    ++new_num_sets;
+                }
+            }
+        }
+        order[order_len++] = w;
+        canon_search(g, incumbent_g, n, new_v_arr, new_set_start, new_set_len, new_num_sets, order, order_len);
+        --order_len;
+        set_len[best_set_idx]++;   // re-add element that was temporarily removed
+
+        // return w to where it was before
+        tmp = set[min_set_len - 1];
+        set[min_set_len - 1] = set[i];
+        set[i] = tmp;
+    }
+}
+
 void make_canonical(graph *g, int n, graph *canon_g)
 {
+#ifdef SELF_CONTAINED
+    int degs[MAXN];
+    for (int i=0; i<n; i++)
+        degs[i] = POPCOUNT(g[i]);
+
+    struct VtxInfo vtx_info[MAXN];
+    for (int i=0; i<n; i++)
+        vtx_info[i] = (struct VtxInfo) {i, degs[i], weighted_nb_nb_deg_sum(g, i, degs)};
+
+    INSERTION_SORT(struct VtxInfo, vtx_info, n, compare_vtx_info(&vtx_info[j], &vtx_info[j-1]));
+
+    int v_arr[MAXN];
+    int set_start[MAXN];
+    int set_len[MAXN];
+    int num_sets = 0;
+    int order[MAXN];
+    struct VtxInfo prev_vtx_info = (struct VtxInfo) {-1, -1, 0};
+    int pos = 0;
+    for (int i=0; i<n; i++) {
+        v_arr[pos] = vtx_info[i].v;
+        if (vtx_info[i].deg != prev_vtx_info.deg || vtx_info[i].nnds != prev_vtx_info.nnds) {
+            set_start[num_sets] = pos;
+            set_len[num_sets] = 1;
+            ++num_sets;
+        } else {
+            ++set_len[num_sets - 1];
+        }
+        ++pos;
+        prev_vtx_info = vtx_info[i];
+    }
+
+    graph incumbent_g[MAXN] = {};
+    for (int i=0; i<n; i++)
+        incumbent_g[i] = ~0ull;
+    canon_search(g, incumbent_g, n, v_arr, set_start, set_len, num_sets, order, 0);
+
+    for (int i=0; i<n; i++)
+        canon_g[i] = incumbent_g[i];
+
+#else
     int lab[MAXN],ptn[MAXN],orbits[MAXN];
     EMPTYGRAPH(canon_g,1,MAXN);
     setword workspace[120];
     nauty(g,lab,ptn,NULL,orbits,&options,&stats,workspace,120,1,n,canon_g);
-    nauty_calls++;
+#endif
+    canonicalisation_calls++;
 }
 
 bool deletion_is_better(int v, graph *g, int n, int min_deg, int max_deg)
@@ -444,7 +638,7 @@ int main(int argc, char *argv[])
         printf(" %llu", num_visited_by_order[i]);
     printf("\n");
 
-    printf("Nauty calls: %lld\n", nauty_calls);
+    printf("Canonicalisation calls: %lld\n", canonicalisation_calls);
     printf("Total graph count: %llu\n", global_graph_count);
 
     clean_up_graph_type_lists();

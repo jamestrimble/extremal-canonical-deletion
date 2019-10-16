@@ -112,21 +112,31 @@ void canon_search(graph *g, graph *incumbent_g, int n, int *v_arr,
 
         graph new_g[MAXN] = {};
         for (int i=0; i<n; i++) {
-            setword row = g[i];
+            setword row = g[order[i]];
             while (row) {
                 int w;
                 TAKEBIT(w, row);
-                if (w > i)
-                    break;
-                ADDELEMENT(&new_g[order_inv[i]], order_inv[w]);
-                ADDELEMENT(&new_g[order_inv[w]], order_inv[i]);
+                ADDELEMENT(&new_g[i], order_inv[w]);
             }
-        }
-
-        if (compare_graphs(0, 0, new_g, incumbent_g, n) == LESS_THAN) {
-            //printf("Update canon\n");
-            for (int i=0; i<MAXN; i++) {
-                incumbent_g[i] = new_g[i];
+            // do the comparison with the incumbent before making the whole new graph
+            if (new_g[i] != incumbent_g[i]) {
+                if (new_g[i] < incumbent_g[i]) {
+                    // update incumbent
+                    for (int j=0; j<=i; j++) {
+                        incumbent_g[j] = new_g[j];
+                    }
+                    // make the rest of the re-ordered graph directly in incumbent_g
+                    for (int j=i+1; j<n; j++) {
+                        incumbent_g[j] = 0;
+                        setword row = g[order[j]];
+                        while (row) {
+                            int w;
+                            TAKEBIT(w, row);
+                            ADDELEMENT(&incumbent_g[j], order_inv[w]);
+                        }
+                    }
+                }
+                return;
             }
         }
         return;

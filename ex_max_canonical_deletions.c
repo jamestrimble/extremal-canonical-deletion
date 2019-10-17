@@ -304,45 +304,10 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
         return true;
 
     setword have_short_path[MAXN];
-    if (!tentativeness_level || MIN_GIRTH != 6) {
+    if (!tentativeness_level) {
         all_pairs_check_for_short_path(gp->graph, gp->n, MIN_GIRTH-3, have_short_path);
     } else {
-        // TODO: tidy this up
-        // TODO: make this work for any value of MIN_GIRTH, and not just 6
-        for (int i=0; i<gp->n-1; i++) {
-            have_short_path[i] = parent_have_short_path[i];
-        }
-        setword last_vtx_1_path = gp->graph[gp->n-1];
-        setword last_vtx_2_path = 0;
-        setword last_vtx_3_path = 0;
-        setword tmp = last_vtx_1_path;
-        while (tmp) {
-            int v;
-            TAKEBIT(v, tmp);
-            last_vtx_2_path |= gp->graph[v];
-        }
-        last_vtx_2_path &= ~bit[gp->n-1];
-        tmp = last_vtx_2_path;
-        while (tmp) {
-            int v;
-            TAKEBIT(v, tmp);
-            last_vtx_3_path |= gp->graph[v];
-            have_short_path[v] |= last_vtx_1_path;
-        }
-        last_vtx_3_path &= ~bit[gp->n-1];
-        tmp = last_vtx_1_path;
-        while (tmp) {
-            int v;
-            TAKEBIT(v, tmp);
-            have_short_path[v] |= (last_vtx_1_path | last_vtx_2_path);
-        }
-        have_short_path[gp->n-1] = last_vtx_1_path | last_vtx_2_path | last_vtx_3_path | bit[gp->n-1];
-        tmp = have_short_path[gp->n-1];
-        while (tmp) {
-            int v;
-            TAKEBIT(v, tmp);
-            have_short_path[v] |= bit[gp->n-1];
-        }
+        extend_short_path_arr(gp->graph, gp->n, MIN_GIRTH-3, have_short_path, parent_have_short_path);
     }
 
     setword forced_neighbours_copy = forced_neighbours;

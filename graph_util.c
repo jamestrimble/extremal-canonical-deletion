@@ -65,46 +65,67 @@ void all_pairs_check_for_short_path(graph *g, int n, int max_path_len, setword *
 void extend_short_path_arr(graph *g, int n, int max_path_len, setword *have_short_path,
         setword *parent_have_short_path)
 {
-    if (max_path_len != 3) {
+    if (max_path_len == 2) {
+        for (int i=0; i<n-1; i++)
+            have_short_path[i] = parent_have_short_path[i];
+        setword last_vtx_1_path = g[n-1];
+        setword last_vtx_2_path = 0;
+        setword tmp = last_vtx_1_path;
+        while (tmp) {
+            int v;
+            TAKEBIT(v, tmp);
+            last_vtx_2_path |= g[v];
+        }
+        last_vtx_2_path &= ~bit[n-1];
+        tmp = last_vtx_1_path;
+        while (tmp) {
+            int v;
+            TAKEBIT(v, tmp);
+            have_short_path[v] |= last_vtx_1_path;
+        }
+        have_short_path[n-1] = last_vtx_1_path | last_vtx_2_path | bit[n-1];
+        tmp = have_short_path[n-1];
+        while (tmp) {
+            int v;
+            TAKEBIT(v, tmp);
+            have_short_path[v] |= bit[n-1];
+        }
+    } else if (max_path_len == 3) {
+        for (int i=0; i<n-1; i++)
+            have_short_path[i] = parent_have_short_path[i];
+        setword last_vtx_1_path = g[n-1];
+        setword last_vtx_2_path = 0;
+        setword last_vtx_3_path = 0;
+        setword tmp = last_vtx_1_path;
+        while (tmp) {
+            int v;
+            TAKEBIT(v, tmp);
+            last_vtx_2_path |= g[v];
+        }
+        last_vtx_2_path &= ~bit[n-1];
+        tmp = last_vtx_2_path;
+        while (tmp) {
+            int v;
+            TAKEBIT(v, tmp);
+            last_vtx_3_path |= g[v];
+            have_short_path[v] |= last_vtx_1_path;
+        }
+        last_vtx_3_path &= ~bit[n-1];
+        tmp = last_vtx_1_path;
+        while (tmp) {
+            int v;
+            TAKEBIT(v, tmp);
+            have_short_path[v] |= (last_vtx_1_path | last_vtx_2_path);
+        }
+        have_short_path[n-1] = last_vtx_1_path | last_vtx_2_path | last_vtx_3_path | bit[n-1];
+        tmp = have_short_path[n-1];
+        while (tmp) {
+            int v;
+            TAKEBIT(v, tmp);
+            have_short_path[v] |= bit[n-1];
+        }
+    } else {
         all_pairs_check_for_short_path(g, n, max_path_len, have_short_path);
-        return;
-    }
-
-    // TODO: tidy this up
-    // TODO: make this work for any value of MIN_GIRTH, and not just 6
-    for (int i=0; i<n-1; i++) {
-        have_short_path[i] = parent_have_short_path[i];
-    }
-    setword last_vtx_1_path = g[n-1];
-    setword last_vtx_2_path = 0;
-    setword last_vtx_3_path = 0;
-    setword tmp = last_vtx_1_path;
-    while (tmp) {
-        int v;
-        TAKEBIT(v, tmp);
-        last_vtx_2_path |= g[v];
-    }
-    last_vtx_2_path &= ~bit[n-1];
-    tmp = last_vtx_2_path;
-    while (tmp) {
-        int v;
-        TAKEBIT(v, tmp);
-        last_vtx_3_path |= g[v];
-        have_short_path[v] |= last_vtx_1_path;
-    }
-    last_vtx_3_path &= ~bit[n-1];
-    tmp = last_vtx_1_path;
-    while (tmp) {
-        int v;
-        TAKEBIT(v, tmp);
-        have_short_path[v] |= (last_vtx_1_path | last_vtx_2_path);
-    }
-    have_short_path[n-1] = last_vtx_1_path | last_vtx_2_path | last_vtx_3_path | bit[n-1];
-    tmp = have_short_path[n-1];
-    while (tmp) {
-        int v;
-        TAKEBIT(v, tmp);
-        have_short_path[v] |= bit[n-1];
     }
 }
 

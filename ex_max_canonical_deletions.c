@@ -147,20 +147,26 @@ int choose_set_for_splitting(setword *vv_set, int num_sets)
     return best_set_idx;
 }
 
-bool symmetries_involve_vv_in_order(int *order, int order_len)
-{
-    for (int i=0; i<order_len; i++) {
-        int v = order[i];
-        if (vtx_to_orbit[v] != v || POPCOUNT(orbits[v]) != 1) {
-            return true;
-        }
-    }
-    return false;
-}
-
 void canon_search(graph *g, graph *incumbent_g, int n,
         setword *vv_set, int num_sets, int *order, int order_len)
 {
+    //symmetry breaking
+    if (incumbent_g[0] != ~0ull) {   // only if incumbent has been set
+        for (int i=0; i<order_len; i++) {
+            int v = order[i];
+            int incumbent_v = incumbent_order[i];
+            if (v != incumbent_v && ISELEMENT(&orbits[vtx_to_orbit[v]], incumbent_v)) {
+                return;
+            }
+            if (vtx_to_orbit[v] != v || POPCOUNT(orbits[v]) != 1) {
+                break;
+            }
+        }
+    }
+    if (order_len > 0 && (incumbent_g[0] != ~0ull) && (order[0] != incumbent_order[0]) &&
+            ISELEMENT(&orbits[vtx_to_orbit[order[0]]], incumbent_order[0]))
+        return;
+
     if (only_singleton_sets_exist(vv_set, num_sets)) {
         possibly_update_incumbent(g, n, order, order_len, vv_set, num_sets, incumbent_g);
         return;
@@ -173,9 +179,6 @@ void canon_search(graph *g, graph *incumbent_g, int n,
     while (vv) {
         int w;
         TAKEBIT(w, vv);
-        if (!symmetries_involve_vv_in_order(order, order_len) && (0 != (orbits[vtx_to_orbit[w]] & visited))) {
-            continue;
-        }
         vv_set[best_set_idx] ^= bit[w];   // temporarily remove w
         setword new_vv_set[MAXN];
         int new_num_sets = 0;

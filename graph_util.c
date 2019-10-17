@@ -25,6 +25,18 @@ unsigned long long weighted_nb_nb_deg_sum(graph *g, int v, int *degs) {
     return retval;
 }
 
+unsigned long long fast_weighted_nb_nb_deg_sum(graph *g, int v, int *degs,
+        unsigned long long *vtx_score) {
+    unsigned long long retval = 0;
+    setword nb = g[v];
+    while (nb) {
+        int w;
+        TAKEBIT(w, nb);
+        retval += vtx_score[w];
+    }
+    return retval;
+}
+
 int num_neighbours_of_deg_d(graph *g, int v, int d, int *degs) {
     int count = 0;
     setword nb = g[v];
@@ -318,9 +330,13 @@ void make_canonical(graph *g, int n, graph *canon_g)
     for (int i=0; i<n; i++)
         degs[i] = POPCOUNT(g[i]);
 
+    unsigned long long vtx_score[MAXN];
+    for (int i=0; i<n; i++)
+        vtx_score[i] = (unsigned long long) degs[i] << (nb_deg_sum(g, i, degs) & 31);
+
     struct VtxInfo vtx_info[MAXN];
     for (int i=0; i<n; i++)
-        vtx_info[i] = (struct VtxInfo) {i, degs[i], weighted_nb_nb_deg_sum(g, i, degs)};
+        vtx_info[i] = (struct VtxInfo) {i, degs[i], fast_weighted_nb_nb_deg_sum(g, i, degs, vtx_score)};
 
     INSERTION_SORT(struct VtxInfo, vtx_info, n, compare_vtx_info(&vtx_info[j], &vtx_info[j-1]));
 

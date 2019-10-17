@@ -148,7 +148,7 @@ int choose_set_for_splitting(setword *vv_set, int num_sets)
 }
 
 void canon_search(graph *g, graph *incumbent_g, int n,
-        setword *vv_set, int num_sets, int *order, int order_len, bool used_symmetry)
+        setword *vv_set, int num_sets, int *order, int order_len)
 {
     if (only_singleton_sets_exist(vv_set, num_sets)) {
         possibly_update_incumbent(g, n, order, order_len, vv_set, num_sets, incumbent_g);
@@ -162,9 +162,7 @@ void canon_search(graph *g, graph *incumbent_g, int n,
     while (vv) {
         int w;
         TAKEBIT(w, vv);
-        bool new_used_symmetry = false;
-        if (!used_symmetry && (0 != (orbits[vtx_to_orbit[w]] & visited))) {
-            new_used_symmetry = true;
+        if (order_len == 0 && (0 != (orbits[vtx_to_orbit[w]] & visited))) {
             continue;
         }
         vv_set[best_set_idx] ^= bit[w];   // temporarily remove w
@@ -180,7 +178,7 @@ void canon_search(graph *g, graph *incumbent_g, int n,
                 new_vv_set[new_num_sets++] = b;
         }
         order[order_len] = w;
-        canon_search(g, incumbent_g, n, new_vv_set, new_num_sets, order, order_len+1, new_used_symmetry);
+        canon_search(g, incumbent_g, n, new_vv_set, new_num_sets, order, order_len+1);
         vv_set[best_set_idx] ^= bit[w];   // add w back
         ADDELEMENT(&visited, w);
     }
@@ -221,7 +219,7 @@ void make_canonical(graph *g, int n, graph *canon_g)
     for (int i=0; i<n; i++)
         incumbent_g[i] = ~0ull;
     int order[MAXN];
-    canon_search(g, incumbent_g, n, vv_set, num_sets, order, 0, false);
+    canon_search(g, incumbent_g, n, vv_set, num_sets, order, 0);
 
     for (int i=0; i<n; i++)
         canon_g[i] = incumbent_g[i];

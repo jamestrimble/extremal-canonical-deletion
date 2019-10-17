@@ -68,6 +68,10 @@ bool compare_vtx_info(struct VtxInfo *vi0, struct VtxInfo *vi1)
     return false;
 }
 
+int vtx_to_orbit[MAXN];
+setword orbits[MAXN];
+int incumbent_order[MAXN];
+
 void possibly_update_incumbent(graph *g, int n, int *order, int order_len,
         setword *vv_set, int num_sets, graph *incumbent_g)
 {
@@ -86,25 +90,43 @@ void possibly_update_incumbent(graph *g, int n, int *order, int order_len,
             TAKEBIT(w, row);
             ADDELEMENT(&new_g[i], order_inv[w]);
         }
-        // do the comparison with the incumbent before making the whole new graph
-        if (new_g[i] != incumbent_g[i]) {
-            if (new_g[i] < incumbent_g[i]) {
-                // update incumbent
-                for (int j=0; j<=i; j++) {
-                    incumbent_g[j] = new_g[j];
-                }
-                // make the rest of the re-ordered graph directly in incumbent_g
-                for (int j=i+1; j<n; j++) {
-                    incumbent_g[j] = 0;
-                    setword row = g[order[j]];
-                    while (row) {
-                        int w;
-                        TAKEBIT(w, row);
-                        ADDELEMENT(&incumbent_g[j], order_inv[w]);
-                    }
-                }
-            }
+    }
+
+    for (int i=0; i<n; i++) {
+        if (new_g[i] < incumbent_g[i]) {
+            for (int j=0; j<n; j++)
+                incumbent_g[j] = new_g[j];
+            for (int j=0; j<n; j++)
+                incumbent_order[j] = order[j];
             return;
+        }
+        else if (new_g[i] > incumbent_g[i])
+            return;
+    }
+
+    // The graph is the same as the incumbent.  Update orbits.
+    for (int i=0; i<n; i++) {
+        int v = order[i];
+        int w = incumbent_order[i];
+        int orb_v = vtx_to_orbit[v];
+        int orb_w = vtx_to_orbit[w];
+        if (orb_v == orb_w) {
+            continue;
+        }
+        if (orb_v > orb_w) {
+            int tmp = v;
+            v = w;
+            w = tmp;
+            tmp = orb_v;
+            orb_v = w;
+            w = tmp;
+        }
+        setword s = orbits[orb_w];
+        while (s) {
+            int u;
+            TAKEBIT(u, s);
+            vtx_to_orbit[u] = orb_v;
+            ADDELEMENT(&orbits[orb_v], u);
         }
     }
 }
@@ -134,7 +156,7 @@ int choose_set_for_splitting(setword *vv_set, int num_sets)
 }
 
 void canon_search(graph *g, graph *incumbent_g, int n,
-        setword *vv_set, int num_sets, int *order, int order_len)
+        setword *vv_set, int num_sets, int *order, int order_len, bool used_symmetry)
 {
     if (only_singleton_sets_exist(vv_set, num_sets)) {
         possibly_update_incumbent(g, n, order, order_len, vv_set, num_sets, incumbent_g);
@@ -144,9 +166,15 @@ void canon_search(graph *g, graph *incumbent_g, int n,
     int best_set_idx = choose_set_for_splitting(vv_set, num_sets);
 
     setword vv = vv_set[best_set_idx];
+    setword visited = 0;
     while (vv) {
         int w;
         TAKEBIT(w, vv);
+        bool new_used_symmetry = false;
+        if (!used_symmetry && (0 != (orbits[vtx_to_orbit[w]] & visited))) {
+            new_used_symmetry = true;
+            continue;
+        }
         vv_set[best_set_idx] ^= bit[w];   // temporarily remove w
         setword new_vv_set[MAXN];
         int new_num_sets = 0;
@@ -160,14 +188,20 @@ void canon_search(graph *g, graph *incumbent_g, int n,
                 new_vv_set[new_num_sets++] = b;
         }
         order[order_len] = w;
-        canon_search(g, incumbent_g, n, new_vv_set, new_num_sets, order, order_len+1);
+        canon_search(g, incumbent_g, n, new_vv_set, new_num_sets, order, order_len+1, new_used_symmetry);
         vv_set[best_set_idx] ^= bit[w];   // add w back
+        ADDELEMENT(&visited, w);
     }
 }
 
 void make_canonical(graph *g, int n, graph *canon_g)
 {
 #ifdef SELF_CONTAINED
+    for (int i=0; i<n; i++) {
+        vtx_to_orbit[i] = i;
+        orbits[i] = bit[i];
+    }
+
     int degs[MAXN];
     for (int i=0; i<n; i++)
         degs[i] = POPCOUNT(g[i]);
@@ -195,7 +229,7 @@ void make_canonical(graph *g, int n, graph *canon_g)
     for (int i=0; i<n; i++)
         incumbent_g[i] = ~0ull;
     int order[MAXN];
-    canon_search(g, incumbent_g, n, vv_set, num_sets, order, 0);
+    canon_search(g, incumbent_g, n, vv_set, num_sets, order, 0, false);
 
     for (int i=0; i<n; i++)
         canon_g[i] = incumbent_g[i];

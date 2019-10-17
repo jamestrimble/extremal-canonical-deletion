@@ -147,6 +147,17 @@ int choose_set_for_splitting(setword *vv_set, int num_sets)
     return best_set_idx;
 }
 
+bool symmetries_involve_vv_in_order(int *order, int order_len)
+{
+    for (int i=0; i<order_len; i++) {
+        int v = order[i];
+        if (vtx_to_orbit[v] != v || POPCOUNT(orbits[v]) != 1) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void canon_search(graph *g, graph *incumbent_g, int n,
         setword *vv_set, int num_sets, int *order, int order_len)
 {
@@ -162,7 +173,7 @@ void canon_search(graph *g, graph *incumbent_g, int n,
     while (vv) {
         int w;
         TAKEBIT(w, vv);
-        if (order_len == 0 && (0 != (orbits[vtx_to_orbit[w]] & visited))) {
+        if (!symmetries_involve_vv_in_order(order, order_len) && (0 != (orbits[vtx_to_orbit[w]] & visited))) {
             continue;
         }
         vv_set[best_set_idx] ^= bit[w];   // temporarily remove w

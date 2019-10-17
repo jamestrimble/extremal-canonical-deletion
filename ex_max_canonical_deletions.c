@@ -75,9 +75,9 @@ int incumbent_order[MAXN];
 void possibly_update_incumbent(graph *g, int n, int *order, int order_len,
         setword *vv_set, int num_sets, graph *incumbent_g)
 {
-    for (int i=0; i<num_sets; i++) {
+    for (int i=0; i<num_sets; i++)
         order[order_len++] = FIRSTBITNZ(vv_set[i]);
-    }
+
     int order_inv[MAXN];
     for (int i=0; i<n; i++)
         order_inv[order[i]] = i;
@@ -99,9 +99,9 @@ void possibly_update_incumbent(graph *g, int n, int *order, int order_len,
             for (int j=0; j<n; j++)
                 incumbent_order[j] = order[j];
             return;
-        }
-        else if (new_g[i] > incumbent_g[i])
+        } else if (new_g[i] > incumbent_g[i]) {
             return;
+        }
     }
 
     // The graph is the same as the incumbent.  Update orbits.
@@ -110,23 +110,15 @@ void possibly_update_incumbent(graph *g, int n, int *order, int order_len,
         int w = incumbent_order[i];
         int orb_v = vtx_to_orbit[v];
         int orb_w = vtx_to_orbit[w];
-        if (orb_v == orb_w) {
-            continue;
-        }
-        if (orb_v > orb_w) {
-            int tmp = v;
-            v = w;
-            w = tmp;
-            tmp = orb_v;
-            orb_v = w;
-            w = tmp;
-        }
-        setword s = orbits[orb_w];
-        while (s) {
-            int u;
-            TAKEBIT(u, s);
-            vtx_to_orbit[u] = orb_v;
-            ADDELEMENT(&orbits[orb_v], u);
+        if (orb_v != orb_w) {
+            // combine orbits of v and w
+            setword s = orbits[orb_w];
+            while (s) {
+                int u;
+                TAKEBIT(u, s);
+                vtx_to_orbit[u] = orb_v;
+            }
+            orbits[orb_v] |= orbits[orb_w];
         }
     }
 }

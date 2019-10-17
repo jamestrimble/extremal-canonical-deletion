@@ -43,18 +43,6 @@ struct VtxInfo
     unsigned long long nnds;
 };
 
-void show_graph_(graph *g, int n)
-{
-    printf("Graph with %d vertices\n", n);
-    for (int i=0; i<n; i++) {
-        for (int j=0; j<n; j++) {
-            printf("%s ", ISELEMENT(&g[i], j) ? "X" : ".");
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-
 #define INSERTION_SORT(type, arr, arr_len, swap_condition) do { \
     for (int i=1; i<arr_len; i++) {                             \
         for (int j=i; j>=1; j--) {                              \

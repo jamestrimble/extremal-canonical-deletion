@@ -305,19 +305,21 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
         extend_short_path_arr(gp->graph, gp->n, MIN_GIRTH-3, have_short_path, parent_have_short_path);
     }
 
-    setword forced_neighbours_copy = forced_neighbours;
     setword neighbours = 0;
     bool max_deg_incremented = false;
-    while (forced_neighbours_copy) {
-        int cand;
-        TAKEBIT(cand, forced_neighbours_copy);
-        ADDELEMENT(&neighbours, cand);
-        candidate_neighbours &= ~have_short_path[cand];
-        if (0 != (forced_neighbours & ~(neighbours | candidate_neighbours)))
-            return false;
+    if (forced_neighbours) {
+        setword forced_neighbours_copy = forced_neighbours;
+        while (forced_neighbours_copy) {
+            int cand;
+            TAKEBIT(cand, forced_neighbours_copy);
+            ADDELEMENT(&neighbours, cand);
+            candidate_neighbours &= ~have_short_path[cand];
+            if (0 != (forced_neighbours & ~(neighbours | candidate_neighbours)))
+                return false;
+        }
+        if (gp->min_deg == gp->max_deg)
+            max_deg_incremented = true;
     }
-    if (forced_neighbours && gp->min_deg == gp->max_deg)
-        max_deg_incremented = true;
 
     struct SearchData sd = {gp, have_short_path, gp_set_ptr, {min_degs[0], min_degs[1]},
             tentativeness_level, vertices_of_min_deg};

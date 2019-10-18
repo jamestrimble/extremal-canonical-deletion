@@ -104,24 +104,26 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs,
     for (int i=0; i<n-1; i++) {
         if (degs[i]==min_deg) {
             int n1 = num_neighbours_of_deg_d(g, i, min_deg, degs);
-            if (n1 > n0) {
+            if (n1 > n0)
                 return false;
-            } else if (n1 == n0) {
-                int nds1 = nb_deg_sum(g, i, degs);
-                if (nds1 > nds0) {
-                    return false;
-                } else if (nds1 == nds0) {
-                    if (nnds0 == ULLONG_MAX)
-                        nnds0 = weighted_nb_nb_deg_sum(g, n-1, degs);
-                    unsigned long long nnds1 = weighted_nb_nb_deg_sum(g, i, degs);
-                    if (nnds1 > nnds0) {
-                        return false;
-                    } else if (!tentativeness_level && nnds1 == nnds0) {
-                        // Delay the expensive checks that use Nauty;
-                        // if we're lucky, we won't need to do them at all.
-                        vertices_to_check_deletion[vertices_to_check_deletion_len++] = i;
-                    }
-                }
+            else if (n1 != n0)
+                continue;
+
+            int nds1 = nb_deg_sum(g, i, degs);
+            if (nds1 > nds0)
+                return false;
+            else if (nds1 != nds0)
+                continue;
+
+            if (nnds0 == ULLONG_MAX)
+                nnds0 = weighted_nb_nb_deg_sum(g, n-1, degs);
+            unsigned long long nnds1 = weighted_nb_nb_deg_sum(g, i, degs);
+            if (nnds1 > nnds0) {
+                return false;
+            } else if (!tentativeness_level && nnds1 == nnds0) {
+                // Delay the expensive checks that use Nauty;
+                // if we're lucky, we won't need to do them at all.
+                vertices_to_check_deletion[vertices_to_check_deletion_len++] = i;
             }
         }
     }

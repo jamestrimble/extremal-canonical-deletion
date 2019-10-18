@@ -147,9 +147,6 @@ struct SearchData
     setword vertices_of_min_deg;
 };
 
-bool search(struct SearchData *sd,
-        setword neighbours, setword candidate_neighbours, bool max_deg_incremented);
-
 bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_have_short_path);
 
 // sd->gp is the graph that we're augmenting
@@ -189,7 +186,10 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
         graph new_g_canonical[MAXN];
         make_canonical(new_g, n, new_g_canonical);
         canonicalisation_calls++;
-        gp_set_add(sd->gp_set, new_g_canonical, n, edge_count, min_deg, max_deg);
+        struct GraphPlus *canonicalised_gp = gp_set_add(
+                sd->gp_set, new_g_canonical, n, edge_count, min_deg, max_deg);
+        if (canonicalised_gp)   // if not already in set
+            visit_graph(canonicalised_gp, 0, NULL);
     }
     return true;
 }
@@ -229,16 +229,6 @@ bool search(struct SearchData *sd, setword neighbours, setword candidate_neighbo
         }
     }
     return false;
-}
-
-void traverse_tree(struct GraphPlus *node,
-        bool (*callback)(struct GraphPlus *, int, graph *))
-{
-    if (node == NULL || callback == NULL)
-        return;
-    traverse_tree(node->left, callback);
-    callback(node, 0, NULL);
-    traverse_tree(node->right, callback);
 }
 
 // add a vertex to the graph
@@ -336,7 +326,6 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
     if (tentativeness_level) {
         return search_result;
     } else {
-        traverse_tree(gp_set.tree_head, visit_graph);
         free_tree(&gp_set.tree_head);
         return true;
     }

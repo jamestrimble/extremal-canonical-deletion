@@ -287,9 +287,9 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
         int pc = POPCOUNT(gp->graph[l]);
         if (min_degs[1] == 0 && pc == gp->max_deg)
             continue;
+        ADDELEMENT(&candidate_neighbours, l);
         if (pc == gp->min_deg)
             ADDELEMENT(&vertices_of_min_deg, l);
-        ADDELEMENT(&candidate_neighbours, l);
     }
     setword forced_neighbours = must_increment_min_deg ? vertices_of_min_deg : 0;
 

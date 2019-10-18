@@ -30,7 +30,7 @@ void delete_neighbourhood(int v, graph *g)
     }
 }
 
-bool deletion_is_better(int v, graph *g, int n, int min_deg, int max_deg)
+bool deletion_is_better(int v, graph *g, int n, int min_deg, int max_deg, int tentativeness_level)
 {
     graph g0[MAXN], g1[MAXN];
     for (int i=0; i<n; i++) {
@@ -80,6 +80,9 @@ bool deletion_is_better(int v, graph *g, int n, int min_deg, int max_deg)
             return false;
     }
 
+    if (tentativeness_level != 0)
+        return false;
+
     graph g1_canon[MAXN];
     make_canonical(g1, n-1, g1_canon);
     canonicalisation_calls++;
@@ -110,7 +113,7 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs,
                 continue;
 
             int nds1 = nb_deg_sum(g, i, degs);
-            if (nds1 > nds0)
+            if (nds1 < nds0)
                 return false;
             else if (nds1 != nds0)
                 continue;
@@ -118,9 +121,9 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs,
             if (nnds0 == ULLONG_MAX)
                 nnds0 = weighted_nb_nb_deg_sum(g, n-1, degs);
             unsigned long long nnds1 = weighted_nb_nb_deg_sum(g, i, degs);
-            if (nnds1 > nnds0) {
+            if (nnds1 < nnds0) {
                 return false;
-            } else if (!tentativeness_level && nnds1 == nnds0) {
+            } else if (nnds1 == nnds0) {
                 // Delay the expensive checks that use Nauty;
                 // if we're lucky, we won't need to do them at all.
                 vertices_to_check_deletion[vertices_to_check_deletion_len++] = i;
@@ -128,7 +131,7 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs,
         }
     }
     for (int i=0; i<vertices_to_check_deletion_len; i++)
-        if (deletion_is_better(vertices_to_check_deletion[i], g, n, min_deg, max_deg))
+        if (deletion_is_better(vertices_to_check_deletion[i], g, n, min_deg, max_deg, tentativeness_level))
             return false;
 
     return true;

@@ -237,7 +237,7 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
     if (!tentativeness_level) {
         num_visited_by_order[gp->n]++;
 
-        if (!tentativeness_level && gp->n==global_n) {
+        if (gp->n==global_n) {
             // output graph
             global_graph_count++;
             show_graph(gp);

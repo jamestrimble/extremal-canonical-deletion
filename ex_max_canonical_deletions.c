@@ -162,8 +162,9 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
     while (neighbours_copy) {
         int nb;
         TAKEBIT(nb, neighbours_copy);
-        ADDONEEDGE(new_g, n-1, nb, 1);
+        new_g[nb] |= bit[n-1];
     }
+    new_g[n-1] = neighbours;
 
     int degs[MAXN];
     for (int i=0; i<n; i++)

@@ -251,9 +251,8 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
             if ((((unsigned) global_split_number >> (gp->n - global_low_splitting_level)) & 1) == bit)
                 return true;
         }
-    } else {
-        if (gp->n == global_n)
-            return true;
+    } else if (gp->n == global_n) {
+        return true;
     }
 
     struct GraphPlusSet gp_set;

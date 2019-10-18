@@ -188,6 +188,7 @@ bool compare_vtx_info(struct VtxInfo *vi0, struct VtxInfo *vi1)
     return false;
 }
 
+// These are probably not actually orbits!!!
 static int vtx_to_orbit[MAXN];
 static setword orbits[MAXN];
 static int incumbent_order[MAXN];

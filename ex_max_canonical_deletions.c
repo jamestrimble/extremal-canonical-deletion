@@ -284,7 +284,7 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
     }
     for (int l=0; l<gp->n; l++) {
         int pc = POPCOUNT(gp->graph[l]);
-        if (pc==gp->max_deg && min_degs[1] == 0)
+        if (min_degs[1] == 0 && pc == gp->max_deg)
             continue;
         if (pc == gp->min_deg)
             ADDELEMENT(&vertices_of_min_deg, l);

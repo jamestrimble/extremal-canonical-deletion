@@ -321,14 +321,16 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
     bool max_deg_incremented = false;
     if (forced_neighbours) {
         setword forced_neighbours_copy = forced_neighbours;
+        bool all_forced_neighbours_are_feasible = true;
         while (forced_neighbours_copy) {
             int cand;
             TAKEBIT(cand, forced_neighbours_copy);
             ADDELEMENT(&neighbours, cand);
             candidate_neighbours &= ~have_short_path[cand];
-            if (0 != (forced_neighbours & ~(neighbours | candidate_neighbours)))
-                return false;
+            all_forced_neighbours_are_feasible &= 0 == (forced_neighbours & ~(neighbours | candidate_neighbours));
         }
+        if (!all_forced_neighbours_are_feasible)
+            return false;
         if (gp->min_deg == gp->max_deg)
             max_deg_incremented = true;
     }

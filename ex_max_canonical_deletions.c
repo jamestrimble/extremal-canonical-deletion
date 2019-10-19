@@ -174,7 +174,7 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
     int min_deg = degs[n-1];
     int max_deg = sd->gp->max_deg + max_deg_incremented;
 
-    if (!deletion_is_canonical(new_g, n, min_deg, max_deg, degs, sd->tentativeness_level != 0))
+    if (!deletion_is_canonical(new_g, n, min_deg, max_deg, degs, sd->tentativeness_level))
         return false;
 
     struct GraphPlus tentative_gp;

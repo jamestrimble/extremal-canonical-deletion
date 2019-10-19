@@ -100,6 +100,7 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs,
 {
     int n0 = POPCOUNT(g[n-1] & vertices_of_min_deg);
     int nds0 = nb_deg_sum(g, n-1, degs);
+    int nds0mod = modified_nb_deg_sum(g, n-1, vertices_of_min_deg);
     unsigned long long nnds0 = ULLONG_MAX;  // Only calculate this if we need it
 
     int vertices_to_check_deletion[MAXN];
@@ -120,6 +121,12 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs,
         if (nds1 < nds0)
             return false;
         else if (nds1 != nds0)
+            continue;
+
+        int nds1mod = modified_nb_deg_sum(g, i, vertices_of_min_deg);
+        if (nds1mod < nds0mod)
+            return false;
+        else if (nds1mod != nds0mod)
             continue;
 
         if (nnds0 == ULLONG_MAX)

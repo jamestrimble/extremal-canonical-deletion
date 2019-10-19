@@ -14,6 +14,17 @@ int nb_deg_sum(graph *g, int v, int *degs) {
     return deg_sum;
 }
 
+int modified_nb_deg_sum(graph *g, int v, setword s) {
+    int deg_sum = 0;
+    setword nb = g[v];
+    while (nb) {
+        int w;
+        TAKEBIT(w, nb);
+        deg_sum += POPCOUNT(g[w] & s);
+    }
+    return deg_sum;
+}
+
 unsigned long long weighted_nb_nb_deg_sum(graph *g, int v, int *degs) {
     unsigned long long retval = 0;
     setword nb = g[v];

@@ -101,7 +101,6 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs,
     int n0 = POPCOUNT(g[n-1] & vertices_of_min_deg);
     int nds0 = nb_deg_sum(g, n-1, degs);
     int nds0mod = modified_nb_deg_sum(g, n-1, vertices_of_min_deg);
-    unsigned long long nnds0 = ULLONG_MAX;  // Only calculate this if we need it
 
     int vertices_to_check_deletion[MAXN];
     int vertices_to_check_deletion_len = 0;
@@ -129,17 +128,27 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs,
         else if (nds1mod != nds0mod)
             continue;
 
-        if (nnds0 == ULLONG_MAX)
-            nnds0 = weighted_nb_nb_deg_sum(g, n-1, degs);
-        unsigned long long nnds1 = weighted_nb_nb_deg_sum(g, i, degs);
+        vertices_to_check_deletion[vertices_to_check_deletion_len++] = i;
+    }
+
+    if (vertices_to_check_deletion_len == 0)
+        return true;
+
+    unsigned long long nnds0 = weighted_nb_nb_deg_sum(g, n-1, degs);
+    int j = 0;
+    for (int i=0; i<vertices_to_check_deletion_len; i++) {
+        int v = vertices_to_check_deletion[i];
+        unsigned long long nnds1 = weighted_nb_nb_deg_sum(g, v, degs);
         if (nnds1 < nnds0) {
             return false;
         } else if (nnds1 == nnds0) {
             // Delay the expensive checks that use Nauty;
             // if we're lucky, we won't need to do them at all.
-            vertices_to_check_deletion[vertices_to_check_deletion_len++] = i;
+            vertices_to_check_deletion[j++] = v;
         }
     }
+    vertices_to_check_deletion_len = j;
+
     for (int i=0; i<vertices_to_check_deletion_len; i++)
         if (deletion_is_better(vertices_to_check_deletion[i], g, n, min_deg, max_deg, tentativeness_level))
             return false;

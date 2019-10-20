@@ -164,6 +164,7 @@ struct SearchData
     setword min_degs[2];
     int tentativeness_level;
     setword vertices_of_min_deg;
+    setword vertices_of_min_deg_plus1;
 };
 
 bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_have_short_path);
@@ -195,10 +196,10 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
     setword vertices_of_min_deg;
     if (min_deg == sd->gp->min_deg) {
         vertices_of_min_deg = bit[n-1] | (sd->vertices_of_min_deg & ~neighbours);
+    } else if (min_deg > sd->gp->min_deg) {
+        vertices_of_min_deg = bit[n-1] | sd->vertices_of_min_deg | (sd->vertices_of_min_deg_plus1 & ~neighbours);
     } else {
         vertices_of_min_deg = bit[n-1];
-        for (int i=0; i<n-1; i++)
-            vertices_of_min_deg |= bit[i] * (degs[i] == min_deg);
     }
     if (!deletion_is_canonical(new_g, n, min_deg, max_deg, degs, sd->tentativeness_level,
             vertices_of_min_deg))
@@ -301,6 +302,7 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
     }
 
     setword vertices_of_min_deg = 0;
+    setword vertices_of_min_deg_plus1 = 0;
     setword vertices_of_max_deg = 0;
     setword combined_min_degs = min_degs[0] | min_degs[1];
     int must_increment_min_deg = true;
@@ -313,6 +315,7 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
     for (int l=0; l<gp->n; l++) {
         int pc = POPCOUNT(gp->graph[l]);
         vertices_of_min_deg |= bit[l] * (pc==gp->min_deg);
+        vertices_of_min_deg_plus1 |= bit[l] * (pc==gp->min_deg+1);
         vertices_of_max_deg |= bit[l] * (pc==gp->max_deg);
     }
     setword forced_neighbours = must_increment_min_deg ? vertices_of_min_deg : 0;
@@ -353,7 +356,7 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
     }
 
     struct SearchData sd = {gp, have_short_path, gp_set_ptr, {min_degs[0], min_degs[1]},
-            tentativeness_level, vertices_of_min_deg};
+            tentativeness_level, vertices_of_min_deg, vertices_of_min_deg_plus1};
     bool search_result = search(&sd, neighbours, candidate_neighbours, max_deg_incremented);
     if (tentativeness_level) {
         return search_result;

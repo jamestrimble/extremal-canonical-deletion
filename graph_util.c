@@ -307,7 +307,6 @@ void canon_search(graph *g, graph *incumbent_g, int n,
     int best_set_idx = choose_set_for_splitting(vv_set, num_sets);
 
     setword vv = vv_set[best_set_idx];
-    setword visited = 0;
     while (vv) {
         int w;
         TAKEBIT(w, vv);
@@ -326,7 +325,6 @@ void canon_search(graph *g, graph *incumbent_g, int n,
         order[order_len] = w;
         canon_search(g, incumbent_g, n, new_vv_set, new_num_sets, order, order_len+1);
         vv_set[best_set_idx] ^= bit[w];   // add w back
-        ADDELEMENT(&visited, w);
     }
 }
 

@@ -309,9 +309,6 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
         min_degs[i] = gt ? gt->min_degs : 0;
     }
 
-    setword vertices_of_min_deg = 0;
-    setword vertices_of_min_deg_plus1 = 0;
-    setword vertices_of_max_deg = 0;
     setword combined_min_degs = min_degs[0] | min_degs[1];
     int must_increment_min_deg = true;
     for (int i=0; i<=gp->min_deg; i++) {
@@ -320,12 +317,16 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
             break;
         }
     }
-    for (int l=0; l<gp->n; l++) {
-        int pc = POPCOUNT(gp->graph[l]);
-        vertices_of_min_deg |= bit[l] * (pc==gp->min_deg);
-        vertices_of_min_deg_plus1 |= bit[l] * (pc==gp->min_deg+1);
-        vertices_of_max_deg |= bit[l] * (pc==gp->max_deg);
-    }
+
+    setword vertices_of_deg[MAXN];
+    for (int i=gp->min_deg; i<=gp->max_deg; i++)
+        vertices_of_deg[i] = 0;
+    for (int i=0; i<gp->n; i++)
+        vertices_of_deg[POPCOUNT(gp->graph[i])] |= bit[i];
+    setword vertices_of_min_deg = vertices_of_deg[gp->min_deg];
+    setword vertices_of_min_deg_plus1 =vertices_of_deg[gp->min_deg+1];
+    setword vertices_of_max_deg =vertices_of_deg[gp->max_deg];
+
     setword forced_neighbours = must_increment_min_deg ? vertices_of_min_deg : 0;
 
     setword candidate_neighbours = ALLMASK(gp->n);

@@ -95,11 +95,10 @@ bool deletion_is_better(int v, graph *g, int n, int min_deg, int max_deg, int te
 // For correctness, we have to be really careful about what rules we
 // put in here.
 // Assumption: the last vertex of g has degree equal to min_deg
-bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs,
+bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg,
         int tentativeness_level, setword vertices_of_min_deg)
 {
     int n0 = POPCOUNT(g[n-1] & vertices_of_min_deg);
-    int nds0 = nb_deg_sum(g, n-1, degs);
     int nds0mod = modified_nb_deg_sum(g, n-1, vertices_of_min_deg);
 
     int vertices_to_check_deletion[MAXN];
@@ -116,12 +115,6 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs,
         else if (n1 != n0)
             continue;
 
-        int nds1 = nb_deg_sum(g, i, degs);
-        if (nds1 < nds0)
-            return false;
-        else if (nds1 != nds0)
-            continue;
-
         int nds1mod = modified_nb_deg_sum(g, i, vertices_of_min_deg);
         if (nds1mod < nds0mod)
             return false;
@@ -134,8 +127,27 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg, int *degs,
     if (vertices_to_check_deletion_len == 0)
         return true;
 
-    unsigned long long nnds0 = weighted_nb_nb_deg_sum(g, n-1, degs);
+    int degs[MAXN];
+    for (int i=0; i<n; i++)
+        degs[i] = POPCOUNT(g[i]);
+
     int j = 0;
+    int nds0 = nb_deg_sum(g, n-1, degs);
+    for (int i=0; i<vertices_to_check_deletion_len; i++) {
+        int v = vertices_to_check_deletion[i];
+        int nds1 = nb_deg_sum(g, v, degs);
+        if (nds1 < nds0)
+            return false;
+        else if (nds1 == nds0)
+            vertices_to_check_deletion[j++] = v;
+    }
+    vertices_to_check_deletion_len = j;
+
+    if (vertices_to_check_deletion_len == 0)
+        return true;
+
+    unsigned long long nnds0 = weighted_nb_nb_deg_sum(g, n-1, degs);
+    j = 0;
     for (int i=0; i<vertices_to_check_deletion_len; i++) {
         int v = vertices_to_check_deletion[i];
         unsigned long long nnds1 = weighted_nb_nb_deg_sum(g, v, degs);
@@ -186,11 +198,7 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
     }
     new_g[n-1] = neighbours;
 
-    int degs[MAXN];
-    for (int i=0; i<n; i++)
-        degs[i] = POPCOUNT(new_g[i]);
-
-    int min_deg = degs[n-1];
+    int min_deg = POPCOUNT(new_g[n-1]);
     int max_deg = sd->gp->max_deg + max_deg_incremented;
 
     setword vertices_of_min_deg;
@@ -201,7 +209,7 @@ bool output_graph(struct SearchData *sd, setword neighbours, bool max_deg_increm
     } else {
         vertices_of_min_deg = bit[n-1];
     }
-    if (!deletion_is_canonical(new_g, n, min_deg, max_deg, degs, sd->tentativeness_level,
+    if (!deletion_is_canonical(new_g, n, min_deg, max_deg, sd->tentativeness_level,
             vertices_of_min_deg))
         return false;
 

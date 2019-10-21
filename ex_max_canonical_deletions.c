@@ -309,14 +309,8 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
         min_degs[i] = gt ? gt->min_degs : 0;
     }
 
-    setword combined_min_degs = min_degs[0] | min_degs[1];
-    int must_increment_min_deg = true;
-    for (int i=0; i<=gp->min_deg; i++) {
-        if (ISELEMENT(&combined_min_degs, i)) {
-            must_increment_min_deg = false;
-            break;
-        }
-    }
+    setword bits_up_to_min_deg = ALLMASK(gp->min_deg + 1);
+    bool must_increment_min_deg = 0 == (bits_up_to_min_deg & (min_degs[0] | min_degs[1]));
 
     setword vertices_of_deg[MAXN];
     for (int i=gp->min_deg; i<=gp->max_deg; i++)

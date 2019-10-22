@@ -36,13 +36,13 @@ int modified_nb_deg_sum(graph *g, int v, setword s) {
     return deg_sum;
 }
 
-unsigned long long weighted_nb_nb_deg_sum(graph *g, int v, int *degs) {
+unsigned long long weighted_nb_nb_deg_sum(graph *g, int v) {
     unsigned long long retval = 0;
     setword nb = g[v];
     while (nb) {
         int w;
         TAKEBIT(w, nb);
-        retval += (unsigned long long) degs[w] << (nb_deg_sum(g, w, degs) & 31);
+        retval += (unsigned long long) POPCOUNT(g[w]) << (nb_deg_sum_self_contained(g, w) & 31);
     }
     return retval;
 }

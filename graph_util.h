@@ -2,6 +2,8 @@
 
 int nb_deg_sum(graph *g, int v, int *degs);
 
+int nb_deg_sum_self_contained(graph *g, int v);
+
 int modified_nb_deg_sum(graph *g, int v, setword s);
 
 unsigned long long weighted_nb_nb_deg_sum(graph *g, int v, int *degs);

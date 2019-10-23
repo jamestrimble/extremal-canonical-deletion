@@ -289,9 +289,6 @@ void canon_search(graph *g, graph *incumbent_g, int n,
             }
         }
     }
-    if (order_len > 0 && (incumbent_g[0] != ~0ull) && (order[0] != incumbent_order[0]) &&
-            ISELEMENT(&orbits[vtx_to_orbit[order[0]]], incumbent_order[0]))
-        return;
 
     if (only_singleton_sets_exist(vv_set, num_sets)) {
         possibly_update_incumbent(g, n, order, order_len, vv_set, num_sets, incumbent_g);

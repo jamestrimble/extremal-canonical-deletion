@@ -180,7 +180,6 @@ void show_graph(struct GraphPlus *gp)
 ////////////////////////////////////////////////////////////////////////////////
 struct VtxInfo
 {
-    int v;
     int deg;
     unsigned long long nnds;
 };
@@ -351,19 +350,24 @@ int make_vv_sets(graph *g, int n, setword *vv_set)
 
     struct VtxInfo vtx_info[MAXN];
     for (int i=0; i<n; i++)
-        vtx_info[i] = (struct VtxInfo) {i, degs[i], fast_weighted_nb_nb_deg_sum(g, i, degs, vtx_score)};
+        vtx_info[i] = (struct VtxInfo) {degs[i], fast_weighted_nb_nb_deg_sum(g, i, degs, vtx_score)};
 
-    INSERTION_SORT(struct VtxInfo, vtx_info, n, compare_vtx_info(&vtx_info[j], &vtx_info[j-1]));
+    int vv[MAXN];
+    for (int i=0; i<n; i++)
+        vv[i] = i;
 
-    struct VtxInfo prev_vtx_info = (struct VtxInfo) {-1, -1, 0};
+    INSERTION_SORT(int, vv, n, compare_vtx_info(&vtx_info[vv[j]], &vtx_info[vv[j-1]]));
+
+    struct VtxInfo prev_vtx_info = (struct VtxInfo) {-1, 0};
     int current_set_num = -1;
     for (int i=0; i<n; i++) {
-        if (vtx_info[i].deg != prev_vtx_info.deg || vtx_info[i].nnds != prev_vtx_info.nnds) {
+        int v = vv[i];
+        if (vtx_info[v].deg != prev_vtx_info.deg || vtx_info[v].nnds != prev_vtx_info.nnds) {
             ++current_set_num;
             vv_set[current_set_num] = 0;
         }
-        vv_set[current_set_num] |= bit[vtx_info[i].v];
-        prev_vtx_info = vtx_info[i];
+        vv_set[current_set_num] |= bit[v];
+        prev_vtx_info = vtx_info[v];
     }
     return current_set_num + 1;
 }

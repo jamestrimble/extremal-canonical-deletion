@@ -47,7 +47,7 @@ unsigned long long weighted_nb_nb_deg_sum(graph *g, int v) {
     return retval;
 }
 
-unsigned long long fast_weighted_nb_nb_deg_sum(graph *g, int v, int *degs,
+unsigned long long fast_weighted_nb_nb_deg_sum(graph *g, int v,
         unsigned long long *vtx_score) {
     unsigned long long retval = 0;
     setword nb = g[v];
@@ -178,11 +178,6 @@ void show_graph(struct GraphPlus *gp)
 ////////////////////////////////////////////////////////////////////////////////
 //  Canonicalisation
 ////////////////////////////////////////////////////////////////////////////////
-struct VtxInfo
-{
-    int deg;
-    unsigned long long nnds;
-};
 
 #define INSERTION_SORT(type, arr, arr_len, swap_condition) do { \
     for (int i=1; i<arr_len; i++) {                             \
@@ -197,17 +192,6 @@ struct VtxInfo
         }                                                       \
     }                                                           \
 } while(0);
-
-bool compare_vtx_info(struct VtxInfo *vi0, struct VtxInfo *vi1)
-{
-    if (vi0->deg < vi1->deg)
-        return true;
-    if (vi0->deg > vi1->deg)
-        return false;
-    if (vi0->nnds < vi1->nnds)
-        return true;
-    return false;
-}
 
 // These are probably not actually orbits!!!
 static int vtx_to_orbit[MAXN];
@@ -341,34 +325,55 @@ void canon_search(graph *g, graph *incumbent_g, int n,
 int make_vv_sets(graph *g, int n, setword *vv_set)
 {
     int degs[MAXN];
-    for (int i=0; i<n; i++)
-        degs[i] = POPCOUNT(g[i]);
+    setword vv_by_deg[MAXN] = {};
+    setword degs_used = 0;
+    for (int i=0; i<n; i++) {
+        int deg = POPCOUNT(g[i]);
+        degs[i] = deg;
+        vv_by_deg[deg] |= bit[i];
+        degs_used |= bit[deg];
+    }
 
     unsigned long long vtx_score[MAXN];
     for (int i=0; i<n; i++)
         vtx_score[i] = (unsigned long long) degs[i] << (nb_deg_sum(g, i, degs) & 31);
 
-    struct VtxInfo vtx_info[MAXN];
+    unsigned long long vtx_nnds[MAXN];
     for (int i=0; i<n; i++)
-        vtx_info[i] = (struct VtxInfo) {degs[i], fast_weighted_nb_nb_deg_sum(g, i, degs, vtx_score)};
+        vtx_nnds[i] = fast_weighted_nb_nb_deg_sum(g, i, vtx_score);
 
+    // sort by (degree, weighted_nb_nb_deg_sum)
     int vv[MAXN];
-    for (int i=0; i<n; i++)
-        vv[i] = i;
-
-    INSERTION_SORT(int, vv, n, compare_vtx_info(&vtx_info[vv[j]], &vtx_info[vv[j-1]]));
-
-    struct VtxInfo prev_vtx_info = (struct VtxInfo) {-1, 0};
+    int j = 0;
     int current_set_num = -1;
-    for (int i=0; i<n; i++) {
-        int v = vv[i];
-        if (vtx_info[v].deg != prev_vtx_info.deg || vtx_info[v].nnds != prev_vtx_info.nnds) {
-            ++current_set_num;
-            vv_set[current_set_num] = 0;
+    while (degs_used) {
+        int deg;
+        TAKEBIT(deg, degs_used);
+        setword tmp = vv_by_deg[deg];
+        int old_j = j;
+        while (tmp) {
+            int v;
+            TAKEBIT(v, tmp);
+            vv[j++] = v;
         }
-        vv_set[current_set_num] |= bit[v];
-        prev_vtx_info = vtx_info[v];
+        int *ww = vv + old_j;
+        int ww_len = j - old_j;
+        INSERTION_SORT(int, ww, ww_len, vtx_nnds[ww[j]] < vtx_nnds[ww[j-1]]);
+
+        ++current_set_num;
+        vv_set[current_set_num] = bit[ww[0]];
+        unsigned long long prev_nnds = vtx_nnds[ww[0]];
+        for (int i=1; i<ww_len; i++) {
+            int v = ww[i];
+            if (vtx_nnds[v] != prev_nnds) {
+                ++current_set_num;
+                vv_set[current_set_num] = 0;
+            }
+            vv_set[current_set_num] |= bit[v];
+            prev_nnds = vtx_nnds[v];
+        }
     }
+
     return current_set_num + 1;
 }
 

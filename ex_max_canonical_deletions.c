@@ -314,8 +314,8 @@ bool visit_graph(struct GraphPlus *gp, int tentativeness_level, graph *parent_ha
     for (int i=0; i<gp->n; i++)
         vertices_of_deg[POPCOUNT(gp->graph[i])] |= bit[i];
     setword vertices_of_min_deg = vertices_of_deg[gp->min_deg];
-    setword vertices_of_min_deg_plus1 =vertices_of_deg[gp->min_deg+1];
-    setword vertices_of_max_deg =vertices_of_deg[gp->max_deg];
+    setword vertices_of_min_deg_plus1 = (gp->min_deg == gp->max_deg) ? 0 : vertices_of_deg[gp->min_deg+1];
+    setword vertices_of_max_deg = vertices_of_deg[gp->max_deg];
 
     setword forced_neighbours = must_increment_min_deg ? vertices_of_min_deg : 0;
 

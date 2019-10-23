@@ -339,14 +339,8 @@ void canon_search(graph *g, graph *incumbent_g, int n,
     }
 }
 
-void make_canonical(graph *g, int n, graph *canon_g)
+int make_vv_sets(graph *g, int n, setword *vv_set)
 {
-#ifdef SELF_CONTAINED
-    for (int i=0; i<n; i++) {
-        vtx_to_orbit[i] = i;
-        orbits[i] = bit[i];
-    }
-
     int degs[MAXN];
     for (int i=0; i<n; i++)
         degs[i] = POPCOUNT(g[i]);
@@ -361,7 +355,6 @@ void make_canonical(graph *g, int n, graph *canon_g)
 
     INSERTION_SORT(struct VtxInfo, vtx_info, n, compare_vtx_info(&vtx_info[j], &vtx_info[j-1]));
 
-    setword vv_set[MAXN];
     struct VtxInfo prev_vtx_info = (struct VtxInfo) {-1, -1, 0};
     int current_set_num = -1;
     for (int i=0; i<n; i++) {
@@ -372,7 +365,19 @@ void make_canonical(graph *g, int n, graph *canon_g)
         vv_set[current_set_num] |= bit[vtx_info[i].v];
         prev_vtx_info = vtx_info[i];
     }
-    int num_sets = current_set_num + 1;
+    return current_set_num + 1;
+}
+
+void make_canonical(graph *g, int n, graph *canon_g)
+{
+#ifdef SELF_CONTAINED
+    for (int i=0; i<n; i++) {
+        vtx_to_orbit[i] = i;
+        orbits[i] = bit[i];
+    }
+
+    setword vv_set[MAXN];
+    int num_sets = make_vv_sets(g, n, vv_set);
 
     graph incumbent_g[MAXN] = {};
     for (int i=0; i<n; i++)

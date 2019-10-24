@@ -129,10 +129,8 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg,
         int nds1mod = modified_nb_deg_sum(g, i, vertices_of_min_deg);
         if (nds1mod < nds0mod)
             return false;
-        else if (nds1mod != nds0mod)
-            continue;
-
-        vertices_to_check_deletion[vertices_to_check_deletion_len++] = i;
+        else if (nds1mod == nds0mod)
+            vertices_to_check_deletion[vertices_to_check_deletion_len++] = i;
     }
 
     if (vertices_to_check_deletion_len == 0)

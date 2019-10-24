@@ -92,6 +92,17 @@ bool deletion_is_better(int v, graph *g, int n, int min_deg, int max_deg, int te
                 g0, g1_canon, n-1) == GREATER_THAN;
 }
 
+int modified_nb_deg_sum(graph *g, int v, setword s) {
+    int deg_sum = 0;
+    setword nb = g[v];
+    while (nb) {
+        int w;
+        TAKEBIT(w, nb);
+        deg_sum += POPCOUNT(g[w] & s);
+    }
+    return deg_sum;
+}
+
 // For correctness, we have to be really careful about what rules we
 // put in here.
 // Assumption: the last vertex of g has degree equal to min_deg

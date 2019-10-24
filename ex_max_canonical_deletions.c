@@ -251,8 +251,8 @@ bool search(struct SearchData *sd, setword neighbours, setword candidate_neighbo
             sd->tentativeness_level)
         return true;
 
-    if (neighbours_count <= sd->gp->min_deg) {
-        while (candidate_neighbours) {
+    if (candidate_neighbours && neighbours_count <= sd->gp->min_deg) {
+        do {
             int cand;
             TAKEBIT(cand, candidate_neighbours);
             setword new_neighbours = neighbours | bit[cand];
@@ -261,7 +261,7 @@ bool search(struct SearchData *sd, setword neighbours, setword candidate_neighbo
                     max_deg_incremented || POPCOUNT(sd->gp->graph[cand]) == sd->gp->max_deg) &&
                     sd->tentativeness_level)
                 return true;
-        }
+        } while (candidate_neighbours);
     }
     return false;
 }

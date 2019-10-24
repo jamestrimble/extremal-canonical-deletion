@@ -111,6 +111,7 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg,
 {
     int n0 = POPCOUNT(g[n-1] & vertices_of_min_deg);
     int nds0mod = modified_nb_deg_sum(g, n-1, vertices_of_min_deg);
+    int nds0 = nb_deg_sum_self_contained(g, n-1);
 
     int vertices_to_check_deletion[MAXN];
     int vertices_to_check_deletion_len = 0;
@@ -129,7 +130,13 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg,
         int nds1mod = modified_nb_deg_sum(g, i, vertices_of_min_deg);
         if (nds1mod < nds0mod)
             return false;
-        else if (nds1mod == nds0mod)
+        else if (nds1mod != nds0mod)
+            continue;
+
+        int nds1 = nb_deg_sum_self_contained(g, i);
+        if (nds1 < nds0)
+            return false;
+        else if (nds1 == nds0)
             vertices_to_check_deletion[vertices_to_check_deletion_len++] = i;
     }
 
@@ -137,22 +144,7 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg,
         return true;
 
     int j = 0;
-    int nds0 = nb_deg_sum_self_contained(g, n-1);
-    for (int i=0; i<vertices_to_check_deletion_len; i++) {
-        int v = vertices_to_check_deletion[i];
-        int nds1 = nb_deg_sum_self_contained(g, v);
-        if (nds1 < nds0)
-            return false;
-        else if (nds1 == nds0)
-            vertices_to_check_deletion[j++] = v;
-    }
-    vertices_to_check_deletion_len = j;
-
-    if (vertices_to_check_deletion_len == 0)
-        return true;
-
     unsigned long long nnds0 = weighted_nb_nb_deg_sum(g, n-1);
-    j = 0;
     for (int i=0; i<vertices_to_check_deletion_len; i++) {
         int v = vertices_to_check_deletion[i];
         unsigned long long nnds1 = weighted_nb_nb_deg_sum(g, v);

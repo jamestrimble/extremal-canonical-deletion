@@ -87,9 +87,7 @@ bool deletion_is_better(int v, graph *g, int n, int min_deg, int max_deg, int te
     make_canonical(g1, n-1, g1_canon);
     canonicalisation_calls++;
 
-    return compare_graphs(hash_graph(g0, n-1),
-                hash_graph(g1_canon, n-1),
-                g0, g1_canon, n-1) == GREATER_THAN;
+    return compare_graphs(g0, g1_canon, n-1) == GREATER_THAN;
 }
 
 int modified_nb_deg_sum(graph *g, int v, setword s) {

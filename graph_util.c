@@ -281,8 +281,12 @@ void canon_search(graph *g, graph *incumbent_g, int n,
         for (int i=0; i<order_len; i++) {
             int v = order[i];
             int incumbent_v = incumbent_order[i];
-            if (v != incumbent_v && ISELEMENT(&orbits[vtx_to_orbit[v]], incumbent_v)) {
-                return;
+            if (v != incumbent_v) {
+                if (ISELEMENT(&orbits[vtx_to_orbit[v]], incumbent_v)) {
+                    return;
+                } else {
+                    break;
+                }
             }
             if (vtx_to_orbit[v] != v || POPCOUNT(orbits[v]) != 1) {
                 break;

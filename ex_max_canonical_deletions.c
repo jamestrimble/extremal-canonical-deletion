@@ -113,8 +113,7 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg,
     int nds0mod = modified_nb_deg_sum(g, n-1, vertices_of_min_deg);
     int nds0 = nb_deg_sum_self_contained(g, n-1);
 
-    int vertices_to_check_deletion[MAXN];
-    int vertices_to_check_deletion_len = 0;
+    setword vertices_to_check_deletion = 0;
 
     setword vv = vertices_of_min_deg ^ bit[n-1];
     while (vv) {
@@ -137,30 +136,34 @@ bool deletion_is_canonical(graph *g, int n, int min_deg, int max_deg,
         if (nds1 < nds0)
             return false;
         else if (nds1 == nds0)
-            vertices_to_check_deletion[vertices_to_check_deletion_len++] = i;
+            vertices_to_check_deletion |= bit[i];
     }
 
-    if (vertices_to_check_deletion_len == 0)
+    if (!vertices_to_check_deletion)
         return true;
 
-    int j = 0;
     unsigned long long nnds0 = weighted_nb_nb_deg_sum(g, n-1);
-    for (int i=0; i<vertices_to_check_deletion_len; i++) {
-        int v = vertices_to_check_deletion[i];
+    setword tmp = vertices_to_check_deletion;
+    vertices_to_check_deletion = 0;
+    while (tmp) {
+        int v;
+        TAKEBIT(v, tmp);
         unsigned long long nnds1 = weighted_nb_nb_deg_sum(g, v);
         if (nnds1 < nnds0) {
             return false;
         } else if (nnds1 == nnds0) {
             // Delay the expensive checks that use Nauty;
             // if we're lucky, we won't need to do them at all.
-            vertices_to_check_deletion[j++] = v;
+            vertices_to_check_deletion |= bit[v];
         }
     }
-    vertices_to_check_deletion_len = j;
 
-    for (int i=0; i<vertices_to_check_deletion_len; i++)
-        if (deletion_is_better(vertices_to_check_deletion[i], g, n, min_deg, max_deg, tentativeness_level))
+    while (vertices_to_check_deletion) {
+        int v;
+        TAKEBIT(v, vertices_to_check_deletion);
+        if (deletion_is_better(v, g, n, min_deg, max_deg, tentativeness_level))
             return false;
+    }
 
     return true;
 }
